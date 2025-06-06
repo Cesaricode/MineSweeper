@@ -7,6 +7,7 @@ export class Board {
     cols: number;
     grid: Tile[][] = [];
     bombCount: number;
+    flagCount: number = 0;
     bombsDeployed: boolean = false;
 
     constructor(rows: number, cols: number, bombCount: number) {
@@ -104,7 +105,6 @@ export class Board {
 
     public getTile(row: number, col: number): Tile {
         this.assertInBounds(row, col, "getTile");
-        console.log(`[Board] getTile() called on (${row}, ${col})`);
         return this.grid[row][col];
     }
 
@@ -115,9 +115,11 @@ export class Board {
 
         if (tile.status === "hidden") {
             tile.setStatus("flagged");
+            this.flagCount++;
             console.log(`[Board] Tile (${row}, ${col}) flagged.`);
         } else if (tile.status === "flagged") {
             tile.setStatus("hidden");
+            this.flagCount--;
             console.log(`[Board] Tile (${row}, ${col}) flag removed.`);
         }
     }

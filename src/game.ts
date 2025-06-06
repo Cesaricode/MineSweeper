@@ -19,7 +19,7 @@ export class Game {
         this.rows = rows;
         this.cols = cols;
         this.difficulty = difficulty;
-        const bombCount: number = getBombCount(rows, cols, difficulty);
+        const bombCount = getBombCount(rows, cols, difficulty);
         this.board = new Board(rows, cols, bombCount);
         this.tilesToReveal = rows * cols - bombCount;
 

@@ -4,7 +4,8 @@ import { Tile } from "./tile.js";
 export class GameUI {
 
     private game: Game;
-    private boardElement: HTMLElement;
+    private boardElement!: HTMLElement;
+    private bombCountElement!: HTMLElement;
     private tileListeners: Map<string, {
         click: EventListener;
         contextmenu: EventListener;
@@ -15,14 +16,32 @@ export class GameUI {
 
     constructor(boardElementId: string, rows: number, cols: number, difficulty: string) {
         this.game = new Game(rows, cols, difficulty);
+        this.setBoardElement(boardElementId);
+        this.setBombCountElement();
+        this.updateBombCount();
+    }
+
+    private setBoardElement(boardElementId: string,): void {
         const element: HTMLElement | null = document.getElementById(boardElementId);
         if (!element) throw new Error("Board element not found.");
         this.boardElement = element;
     }
 
+    private setBombCountElement(): void {
+        const bombCounter = document.getElementById("bomb-count");
+        if (!bombCounter) throw new Error("Bomb counter element not found.");
+        this.bombCountElement = bombCounter;
+    }
+
+    private updateBombCount(): void {
+        console.log(this.game.board.flagCount);
+        this.bombCountElement.textContent = (this.game.board.bombCount - this.game.board.flagCount).toString();
+    }
+
     public renderBoard(): void {
         this.clearTileEventListeners();
         this.prepareBoardElement(this.boardElement);
+        this.updateBombCount();
 
         for (let row = 0; row < this.game.rows; row++) {
             for (let col = 0; col < this.game.cols; col++) {
