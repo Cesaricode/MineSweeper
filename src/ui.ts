@@ -34,7 +34,6 @@ export class GameUI {
     }
 
     private updateBombCount(): void {
-        console.log(this.game.board.flagCount);
         this.bombCountElement.textContent = (this.game.board.bombCount - this.game.board.flagCount).toString();
     }
 
@@ -166,20 +165,15 @@ export class GameUI {
     private handleHighlightNeighbors(e: MouseEvent, tile: Tile, boardEl: HTMLElement): void {
         if (e.button !== 0) return;
 
-        console.log(`[UI] Mousedown on tile (${tile.row}, ${tile.col}) with adjacentBombCount=${tile.adjacentBombCount}`);
-
         const neighbors: Tile[] = this.game.getNeighbors(tile);
-        console.log(`[UI] Found ${neighbors.length} neighbors`);
 
         for (const neighbor of neighbors) {
-            console.log(`[UI] Checking neighbor at (${neighbor.row}, ${neighbor.col}) - status: ${neighbor.status}`);
             if (neighbor.status === "hidden") {
                 const neighborElement: HTMLElement = boardEl.querySelector(
                     `.tile[data-row="${neighbor.row}"][data-col="${neighbor.col}"]`
                 ) as HTMLElement;
 
                 if (neighborElement) {
-                    console.log(`[UI] Highlighting neighbor at (${neighbor.row}, ${neighbor.col})`);
                     neighborElement.classList.add("highlighted");
                 } else {
                     console.warn(`[UI] Could not find element for neighbor at (${neighbor.row}, ${neighbor.col})`);
@@ -189,7 +183,6 @@ export class GameUI {
     }
 
     private clearHighlights(): void {
-        console.log("[UI] Clearing highlights");
         document.querySelectorAll(".tile.highlighted").forEach(element => {
             element.classList.remove("highlighted");
         });
