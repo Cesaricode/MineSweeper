@@ -42,6 +42,11 @@ export class Game {
 
         console.log(`[Game] Tile status before reveal: ${tile.status}, isBomb=${tile.isBomb}, adjacentBombCount=${tile.adjacentBombCount}`);
 
+        if (tile.status === "revealed" && tile.adjacentBombCount !== 0 && this.status === "playing") {
+            this.chordReveal(tile);
+            return;
+        }
+
         if (tile.adjacentBombCount === 0 && this.status === "playing") {
             console.log(`[Game] Starting flood reveal from (${row}, ${col})`);
             this.floodReveal(row, col);
@@ -50,6 +55,20 @@ export class Game {
         }
 
         console.log(`[Game] Game status after reveal: ${this.status}, tilesToReveal=${this.tilesToReveal}`);
+    }
+
+    private chordReveal(tile: Tile): void {
+        if (tile.status !== "revealed" || tile.adjacentBombCount === 0) return;
+        const neighbors: Tile[] = this.board.getNeighbors(tile);
+        const flaggedCount: number = neighbors.filter(t => t.status === "flagged").length;
+
+        if (flaggedCount === tile.adjacentBombCount) {
+            for (const neighbor of neighbors) {
+                if (neighbor.status === "hidden") {
+                    this.reveal(neighbor.row, neighbor.col);
+                }
+            }
+        }
     }
 
     private revealTile(tile: Tile): void {
@@ -194,5 +213,9 @@ export class Game {
             console.error(`[Game] assertHidden failed on tile (${tile.row}, ${tile.col}). Status: ${tile.status}`);
             throw new Error(`Cannot reveal tile at (${tile.row}, ${tile.col}); current status is '${tile.status}'`);
         }
+    }
+
+    public getNeighbors(tile: Tile): Tile[] {
+        return this.board.getNeighbors(tile);
     }
 }

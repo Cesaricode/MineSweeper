@@ -1,59 +1,186 @@
-import { Game } from "./game.js";
+import { Game, GameStatus } from "./game.js";
+import { Tile } from "./tile.js";
 
-const game = new Game(20, 20, "easy");
+export class GameUI {
 
-export function renderBoard(): void {
-    const boardEl = document.getElementById("board")!;
-    boardEl.innerHTML = "";
-    boardEl.style.gridTemplateColumns = `repeat(${game.cols}, 30px)`;
+    private game: Game;
+    private boardElement: HTMLElement;
+    private tileListeners: Map<string, {
+        click: EventListener;
+        contextmenu: EventListener;
+        mousedown?: EventListener;
+        mouseup?: EventListener;
+        mouseleave?: EventListener;
+    }> = new Map();
 
-    for (let row = 0; row < game.rows; row++) {
-        for (let col = 0; col < game.cols; col++) {
-            const tile = game.getTile(row, col);
-            const tileEl = document.createElement("div");
-            tileEl.className = "tile";
-            tileEl.dataset.row = row.toString();
-            tileEl.dataset.col = col.toString();
+    constructor(boardElementId: string, rows: number, cols: number, difficulty: string) {
+        this.game = new Game(rows, cols, difficulty);
+        const element: HTMLElement | null = document.getElementById(boardElementId);
+        if (!element) throw new Error("Board element not found.");
+        this.boardElement = element;
+    }
 
-            if (tile.status === "revealed") {
-                tileEl.classList.add("revealed");
-                tileEl.textContent = tile.isBomb ? "💣" : tile.adjacentBombCount ? tile.adjacentBombCount.toString() : "";
-                tileEl.dataset.value = tile.adjacentBombCount.toString();
-            } else if (tile.status === "flagged") {
-                tileEl.classList.add("flagged");
-                tileEl.textContent = "🚩";
-            } else if (tile.status === "wrong-flag") {
-                tileEl.classList.add("wrong-flag");
-                tileEl.textContent = "❌";
-            } else {
-                tileEl.textContent = "";
+    public renderBoard(): void {
+        this.clearTileEventListeners();
+        this.prepareBoardElement(this.boardElement);
+
+        for (let row = 0; row < this.game.rows; row++) {
+            for (let col = 0; col < this.game.cols; col++) {
+                const tile: Tile = this.game.getTile(row, col);
+                const tileElement: HTMLElement = this.createTileElement(tile, row, col);
+                this.attachTileEventListeners(tileElement, tile, row, col, this.boardElement);
+                this.boardElement.appendChild(tileElement);
             }
+        }
 
-            tileEl.addEventListener("click", () => {
-                try {
-                    game.reveal(row, col);
-                    renderBoard();
-                } catch (e) {
-                    alert((e as Error).message);
+        this.checkGameStatus();
+    }
+
+    private prepareBoardElement(boardElement: HTMLElement): void {
+        boardElement.innerHTML = "";
+        boardElement.style.gridTemplateColumns = `repeat(${this.game.cols}, 30px)`;
+    }
+
+    private createTileElement(tile: Tile, row: number, col: number): HTMLElement {
+        const tileElement: HTMLElement = document.createElement("div");
+        tileElement.className = "tile";
+        tileElement.dataset.row = row.toString();
+        tileElement.dataset.col = col.toString();
+
+        switch (tile.status) {
+            case "revealed":
+                tileElement.classList.add("revealed");
+                tileElement.textContent = tile.isBomb ? "💣" :
+                    tile.adjacentBombCount ? tile.adjacentBombCount.toString() : "";
+                tileElement.dataset.value = tile.adjacentBombCount.toString();
+                break;
+            case "flagged":
+                tileElement.classList.add("flagged");
+                tileElement.textContent = "🚩";
+                break;
+            case "wrong-flag":
+                tileElement.classList.add("wrong-flag");
+                tileElement.textContent = "❌";
+                break;
+        }
+
+        return tileElement;
+    }
+
+    private attachTileEventListeners(tileElement: HTMLElement, tile: Tile, row: number, col: number, boardEl: HTMLElement): void {
+
+        const onClick: EventListener = (e: Event): void => {
+            try {
+                this.game.reveal(row, col);
+                this.renderBoard();
+            } catch (err) {
+                alert((err as Error).message);
+            }
+        };
+
+        const onContextMenu: EventListener = (e: Event): void => {
+            e.preventDefault();
+            try {
+                this.game.toggleFlag(row, col);
+                this.renderBoard();
+            } catch (err) {
+                alert((err as Error).message);
+            }
+        };
+
+        const onMouseDown: EventListener | undefined =
+            tile.status === "revealed" && tile.adjacentBombCount > 0
+                ? (e: Event): void => this.handleHighlightNeighbors(e as MouseEvent, tile, boardEl)
+                : undefined;
+
+        const onMouseUp: EventListener | undefined =
+            tile.status === "revealed" && tile.adjacentBombCount > 0
+                ? (): void => this.clearHighlights()
+                : undefined;
+
+        const onMouseLeave: EventListener | undefined =
+            tile.status === "revealed" && tile.adjacentBombCount > 0
+                ? (): void => this.clearHighlights()
+                : undefined;
+
+        this.tileListeners.set(`${row},${col}`, {
+            click: onClick,
+            contextmenu: onContextMenu,
+            mousedown: onMouseDown,
+            mouseup: onMouseUp,
+            mouseleave: onMouseLeave,
+        });
+
+        tileElement.addEventListener("click", onClick);
+        tileElement.addEventListener("contextmenu", onContextMenu);
+
+        if (onMouseDown) tileElement.addEventListener("mousedown", onMouseDown);
+        if (onMouseUp) tileElement.addEventListener("mouseup", onMouseUp);
+        if (onMouseLeave) tileElement.addEventListener("mouseleave", onMouseLeave);
+    }
+
+    private clearTileEventListeners(): void {
+        for (const [key, listeners] of this.tileListeners.entries()) {
+            const [rowStr, colStr]: string[] = key.split(",");
+            const row: number = parseInt(rowStr, 10);
+            const col: number = parseInt(colStr, 10);
+
+            const tileElement: HTMLElement | null = this.boardElement.querySelector(
+                `.tile[data-row="${row}"][data-col="${col}"]`
+            );
+
+            if (!tileElement) continue;
+            tileElement.removeEventListener("click", listeners.click);
+            tileElement.removeEventListener("contextmenu", listeners.contextmenu);
+
+            if (listeners.mousedown)
+                tileElement.removeEventListener("mousedown", listeners.mousedown);
+            if (listeners.mouseup)
+                tileElement.removeEventListener("mouseup", listeners.mouseup);
+            if (listeners.mouseleave)
+                tileElement.removeEventListener("mouseleave", listeners.mouseleave);
+        }
+
+        this.tileListeners.clear();
+    }
+
+    private handleHighlightNeighbors(e: MouseEvent, tile: Tile, boardEl: HTMLElement): void {
+        if (e.button !== 0) return;
+
+        console.log(`[UI] Mousedown on tile (${tile.row}, ${tile.col}) with adjacentBombCount=${tile.adjacentBombCount}`);
+
+        const neighbors: Tile[] = this.game.getNeighbors(tile);
+        console.log(`[UI] Found ${neighbors.length} neighbors`);
+
+        for (const neighbor of neighbors) {
+            console.log(`[UI] Checking neighbor at (${neighbor.row}, ${neighbor.col}) - status: ${neighbor.status}`);
+            if (neighbor.status === "hidden") {
+                const neighborElement: HTMLElement = boardEl.querySelector(
+                    `.tile[data-row="${neighbor.row}"][data-col="${neighbor.col}"]`
+                ) as HTMLElement;
+
+                if (neighborElement) {
+                    console.log(`[UI] Highlighting neighbor at (${neighbor.row}, ${neighbor.col})`);
+                    neighborElement.classList.add("highlighted");
+                } else {
+                    console.warn(`[UI] Could not find element for neighbor at (${neighbor.row}, ${neighbor.col})`);
                 }
-            });
-
-            tileEl.addEventListener("contextmenu", (e) => {
-                e.preventDefault();
-                try {
-                    game.toggleFlag(row, col);
-                    renderBoard();
-                } catch (e) {
-                    alert((e as Error).message);
-                }
-            });
-
-            boardEl.appendChild(tileEl);
+            }
         }
     }
 
-    const status = game.getStatus();
-    if (status !== "playing") {
-        setTimeout(() => alert(`You ${status}!`), 100);
+    private clearHighlights(): void {
+        console.log("[UI] Clearing highlights");
+        document.querySelectorAll(".tile.highlighted").forEach(element => {
+            element.classList.remove("highlighted");
+        });
+    }
+
+    private checkGameStatus(): void {
+        const status: GameStatus = this.game.getStatus();
+        if (status !== "playing") {
+            setTimeout(() => alert(`You ${status}!`), 100);
+            this.clearTileEventListeners();
+        }
     }
 }

@@ -150,4 +150,19 @@ export class Board {
             console.log(rowStr.trim());
         }
     }
+
+    public getNeighbors(tile: Tile): Tile[] {
+        const neighbors: Tile[] = [];
+
+        for (const [dx, dy] of directions) {
+            const newRow: number = tile.row + dx;
+            const newCol: number = tile.col + dy;
+
+            if (isInBounds(newRow, newCol, this.rows, this.cols)) {
+                neighbors.push(this.getTile(newRow, newCol));
+            }
+        }
+
+        return neighbors;
+    }
 }
