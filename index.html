@@ -4,14 +4,27 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minesweeper</title>
+    <title>Turtlesweeper</title>
     <link rel="stylesheet" href="/style.css">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <script type="module" src="/build/index.js" defer></script>
 </head>
 
 <body>
-    <h1>Minesweeper</h1>
+    <div id="mode-switcher">
+        <label for="game-mode">Game Mode:
+            <select id="game-mode">
+                <option value="minesweeper">Minesweeper</option>
+                <option value="turtlesweeper">Turtlesweeper</option>
+                <option value="beersweeper">Beersweeper</option>
+                <option value="lovesweeper">Lovesweeper</option>
+                <option value="cookiesweeper">Cookiesweeper</option>
+                <option value="catsweeper">Catsweeper</option>
+                <option value="aliensweeper">Aliensweeper</option>
+            </select>
+        </label>
+    </div>
+    <h1 id="game-title">Turtlesweeper</h1>
     <div id="settings-wrapper">
         <div id="time-counter">Time: <span id="time">0</span></div>
         <form id="settings-form">
@@ -27,7 +40,7 @@
             </label>
             <button type="submit">Start Game</button>
         </form>
-        <div id="bomb-counter">Bombs: <span id="bomb-count">0</span></div>
+        <div id="bomb-counter">Turtles: <span id="bomb-count">0</span></div>
     </div>
     <div id="board"></div>
 </body>

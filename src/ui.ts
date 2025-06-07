@@ -11,6 +11,7 @@ export class GameUI {
     private startTime: number = 0;
     private elapsedTime: number = 0;
     private timerRunning: boolean = false;
+    private bombIcon: string = "💣";
     private tileListeners: Map<string, {
         click: EventListener;
         contextmenu: EventListener;
@@ -111,7 +112,7 @@ export class GameUI {
         switch (tile.status) {
             case "revealed":
                 tileElement.classList.add("revealed");
-                tileElement.textContent = tile.isBomb ? "💣" :
+                tileElement.textContent = tile.isBomb ? this.bombIcon :
                     tile.adjacentBombCount ? tile.adjacentBombCount.toString() : "";
                 tileElement.dataset.value = tile.adjacentBombCount.toString();
                 break;
@@ -241,6 +242,10 @@ export class GameUI {
             setTimeout(() => alert(`You ${status}!`), 100);
             this.clearTileEventListeners();
         }
+    }
+
+    public setBombIcon(icon: string) {
+        this.bombIcon = icon;
     }
 
     public destroy(): void {
