@@ -19,17 +19,24 @@ h1 {
     color: #bb86fc;
 }
 
+#settings-wrapper {
+    position: relative;
+    width: fit-content;
+    margin: 0 auto 20px auto;
+}
+
 #settings-form {
     display: flex;
     justify-content: center;
     gap: 16px;
-    margin-bottom: 24px;
+    margin: 0;
     flex-wrap: wrap;
     align-items: center;
     background-color: #1e1e1e;
     padding: 16px 24px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    width: fit-content;
 }
 
 #settings-form label {
@@ -136,10 +143,19 @@ h1 {
 }
 
 #bomb-counter {
-    margin: 10px 0;
+    margin: 0;
+    padding: 12px 20px;
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+    color: #ff5252;
     font-size: 1.2rem;
     font-weight: bold;
-    color: #c00;
+    border: 2px solid #ff5252;
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translate(16px, -50%);
 }
 
 .wrong-flag {

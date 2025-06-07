@@ -12,20 +12,22 @@
 
 <body>
     <h1>Minesweeper</h1>
-    <form id="settings-form">
-        <label>Rows: <input type="number" id="rows" value="20" /></label>
-        <label>Columns: <input type="number" id="cols" value="20" /></label>
-        <label>
-            Difficulty:
-            <select id="difficulty">
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-            </select>
-        </label>
-        <button type="submit">Start Game</button>
-    </form>
-    <div id="bomb-counter">Bombs: <span id="bomb-count">0</span></div>
+    <div id="settings-wrapper">
+        <form id="settings-form">
+            <label>Rows: <input type="number" id="rows" value="20" /></label>
+            <label>Columns: <input type="number" id="cols" value="20" /></label>
+            <label>
+                Difficulty:
+                <select id="difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </label>
+            <button type="submit">Start Game</button>
+        </form>
+        <div id="bomb-counter">Bombs: <span id="bomb-count">0</span></div>
+    </div>
     <div id="board"></div>
 </body>
 
