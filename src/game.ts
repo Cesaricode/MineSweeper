@@ -26,7 +26,7 @@ export class Game {
 
     public reveal(row: number, col: number): void {
         this.assertPlaying();
-        this.checkFirstMove(row, col);
+        this.ensureBombsDeployed(row, col);
 
         const tile: Tile = this.board.getTile(row, col);
 
@@ -63,16 +63,11 @@ export class Game {
 
     private revealTile(tile: Tile): void {
         this.assertHidden(tile);
-        tile.setStatus("revealed");
-
-        this.tilesToReveal--;
-
-        if (this.tilesToReveal === 0) {
-            this.status = "won";
-        }
+        tile.reveal();
+        this.handleSuccessfulReveal();
     }
 
-    private checkFirstMove(row: number, col: number): void {
+    private ensureBombsDeployed(row: number, col: number): void {
         if (this.isFirstMove) {
             this.board.deployBombs(row, col);
             this.isFirstMove = false;
@@ -113,11 +108,8 @@ export class Game {
         if (tile.isBomb) {
             return;
         }
-        tile.setStatus("revealed");
-        this.tilesToReveal--;
-        if (this.tilesToReveal === 0) {
-            this.status = "won";
-        }
+        tile.reveal();
+        this.handleSuccessfulReveal();
     }
 
     private triggerBomb(): void {
@@ -177,5 +169,12 @@ export class Game {
 
     public getNeighbors(tile: Tile): Tile[] {
         return this.board.getNeighbors(tile);
+    }
+
+    private handleSuccessfulReveal(): void {
+        this.tilesToReveal--;
+        if (this.tilesToReveal === 0) {
+            this.status = "won";
+        }
     }
 }

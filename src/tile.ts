@@ -12,15 +12,21 @@ export class Tile {
         this.col = col;
     }
 
-    setStatus(status: TileStatus): void {
+    public setStatus(status: TileStatus): void {
         this.status = status;
     }
 
-    setAdjacentBombCount(count: number): void {
+    public setAdjacentBombCount(count: number): void {
         this.adjacentBombCount = count;
     }
 
-    setBomb(): void {
+    public setBomb(): void {
         this.isBomb = true;
+    }
+
+    public reveal(): boolean {
+        if (this.status !== "hidden") return false;
+        this.status = "revealed";
+        return true;
     }
 }

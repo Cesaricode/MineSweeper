@@ -107,11 +107,6 @@ export class Board {
         }
     }
 
-    public revealTile(row: number, col: number): void {
-        this.assertInBounds(row, col, "revealTile");
-        this.grid[row][col].setStatus("revealed");
-    }
-
     private assertInBounds(row: number, col: number, methodName: string): void {
         if (!isInBounds(row, col, this.rows, this.cols)) {
             throw new RangeError(`${methodName}: invalid coordinates (${row}, ${col})`);

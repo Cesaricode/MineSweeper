@@ -6,6 +6,11 @@ export class GameUI {
     private game: Game;
     private boardElement!: HTMLElement;
     private bombCountElement!: HTMLElement;
+    private timerElement!: HTMLElement;
+    private timerIntervalId: number | null = null;
+    private startTime: number = 0;
+    private elapsedTime: number = 0;
+    private timerRunning: boolean = false;
     private tileListeners: Map<string, {
         click: EventListener;
         contextmenu: EventListener;
@@ -14,11 +19,19 @@ export class GameUI {
         mouseleave?: EventListener;
     }> = new Map();
 
+
     constructor(boardElementId: string, rows: number, cols: number, difficulty: string) {
         this.game = new Game(rows, cols, difficulty);
         this.setBoardElement(boardElementId);
         this.setBombCountElement();
+        this.setTimerElement();
         this.updateBombCount();
+    }
+
+    private setTimerElement(): void {
+        const element: HTMLElement | null = document.getElementById("time");
+        if (!element) throw new Error("Timer element not found.");
+        this.timerElement = element;
     }
 
     private setBoardElement(boardElementId: string,): void {
@@ -35,6 +48,36 @@ export class GameUI {
 
     private updateBombCount(): void {
         this.bombCountElement.textContent = (this.game.board.bombCount - this.game.board.flagCount).toString();
+    }
+
+    private updateTimerElement(): void {
+        const seconds: number = Math.floor(this.elapsedTime / 1000);
+        this.timerElement.textContent = seconds.toString().padStart(3, '0');
+    }
+
+    private startTimer(): void {
+        if (this.timerRunning) return;
+        this.startTime = Date.now() - this.elapsedTime;
+        this.timerRunning = true;
+
+        this.timerIntervalId = window.setInterval(() => {
+            this.elapsedTime = Date.now() - this.startTime;
+            this.updateTimerElement();
+        }, 1000);
+    }
+
+    private stopTimer(): void {
+        if (this.timerIntervalId !== null) {
+            clearInterval(this.timerIntervalId);
+            this.timerIntervalId = null;
+            this.timerRunning = false;
+        }
+    }
+
+    private resetTimer(): void {
+        this.stopTimer();
+        this.elapsedTime = 0;
+        this.updateTimerElement();
     }
 
     public renderBoard(): void {
@@ -89,6 +132,9 @@ export class GameUI {
 
         const onClick: EventListener = (e: Event): void => {
             try {
+                if (!this.timerRunning && this.game.getStatus() === "playing") {
+                    this.startTimer();
+                }
                 this.game.reveal(row, col);
                 this.renderBoard();
             } catch (err) {
@@ -191,8 +237,15 @@ export class GameUI {
     private checkGameStatus(): void {
         const status: GameStatus = this.game.getStatus();
         if (status !== "playing") {
+            this.stopTimer();
             setTimeout(() => alert(`You ${status}!`), 100);
             this.clearTileEventListeners();
         }
+    }
+
+    public destroy(): void {
+        this.clearTileEventListeners();
+        this.resetTimer();
+        this.boardElement.innerHTML = "";
     }
 }
