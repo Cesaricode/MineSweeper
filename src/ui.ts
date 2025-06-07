@@ -41,7 +41,7 @@ export class GameUI {
         this.boardElement = element;
     }
 
-    private setBombCountElement(): void {
+    public setBombCountElement(): void {
         const bombCounter = document.getElementById("bomb-count");
         if (!bombCounter) throw new Error("Bomb counter element not found.");
         this.bombCountElement = bombCounter;
@@ -252,5 +252,9 @@ export class GameUI {
         this.clearTileEventListeners();
         this.resetTimer();
         this.boardElement.innerHTML = "";
+    }
+
+    public getGame(): Game {
+        return this.game;
     }
 }

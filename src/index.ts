@@ -26,9 +26,10 @@ function init(): void {
 
         document.title = currentTheme.title;
         document.getElementById("game-title")!.textContent = currentTheme.title;
-        document.getElementById("bomb-counter")!.innerHTML = `${currentTheme.bombName} <span id="bomb-count">0</span>`;
+        document.getElementById("bomb-counter")!.innerHTML = `${currentTheme.bombName} <span id="bomb-count">${currentGameUI?.getGame().board.bombCount}</span>`;
 
         currentGameUI!.setBombIcon(currentTheme.icon);
+        currentGameUI!.setBombCountElement();
 
         applyColorConfig(currentTheme.colors);
     }
