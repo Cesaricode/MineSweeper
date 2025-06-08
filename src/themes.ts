@@ -15,7 +15,7 @@ export type ThemeKey = keyof typeof themes;
 export const themes: Record<string, ThemeConfig> = {
     minesweeper: {
         title: "MineSweeper",
-        bombName: "Mine",
+        bombName: "Mines",
         colors: {
             primary: "#9e9e9e",
             flagged: "#cfd8dc",
@@ -25,7 +25,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     turtlesweeper: {
         title: "TurtleSweeper",
-        bombName: "Turtle",
+        bombName: "Turtles",
         colors: {
             primary: "#66bb6a",
             flagged: "#aed581",
@@ -35,7 +35,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     beersweeper: {
         title: "BeerSweeper",
-        bombName: "Beer",
+        bombName: "Beers",
         colors: {
             primary: "#ffb74d",
             flagged: "#ffe082",
@@ -45,7 +45,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     lovesweeper: {
         title: "LoveSweeper",
-        bombName: "Heart",
+        bombName: "Hearts",
         colors: {
             primary: "#e91e63",
             flagged: "#f06292",
@@ -55,7 +55,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     cookiesweeper: {
         title: "CookieSweeper",
-        bombName: "Cookie",
+        bombName: "Cookies",
         colors: {
             primary: "#d7a86e",
             flagged: "#ffe0b2",
@@ -65,7 +65,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     catsweeper: {
         title: "CatSweeper",
-        bombName: "Cat",
+        bombName: "Cats",
         colors: {
             primary: "#6a1b9a",
             flagged: "#f8bbd0",
@@ -75,7 +75,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     aliensweeper: {
         title: "AlienSweeper",
-        bombName: "Alien",
+        bombName: "Aliens",
         colors: {
             primary: "#00e676",
             flagged: "#69f0ae",
@@ -85,7 +85,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     frogsweeper: {
         title: "FrogSweeper",
-        bombName: "Frog",
+        bombName: "Frogs",
         colors: {
             primary: "#76ff03",
             flagged: "#ccff90",
@@ -95,7 +95,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     gemsweeper: {
         title: "GemSweeper",
-        bombName: "Gem",
+        bombName: "Gems",
         colors: {
             primary: "#40c4ff",
             flagged: "#81d4fa",
@@ -103,19 +103,9 @@ export const themes: Record<string, ThemeConfig> = {
         },
         icon: "💎",
     },
-    bonesweeper: {
-        title: "BoneSweeper",
-        bombName: "Bone",
-        colors: {
-            primary: "#5d4037",
-            flagged: "#fceabb",
-            bomb: "#3e2723",
-        },
-        icon: "🦴",
-    },
     cupcakesweeper: {
         title: "CupcakeSweeper",
-        bombName: "Cupcake",
+        bombName: "Cupcakes",
         colors: {
             primary: "#ce93d8",
             flagged: "#f8bbd0",
@@ -125,7 +115,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     icesweeper: {
         title: "IceSweeper",
-        bombName: "Icecube",
+        bombName: "Icecubes",
         colors: {
             primary: "#80deea",
             flagged: "#b2ebf2",
@@ -135,7 +125,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     volcanosweeper: {
         title: "VolcanoSweeper",
-        bombName: "Volcano",
+        bombName: "Volcanoes",
         colors: {
             primary: "#ef5350",
             flagged: "#ff8a65",
@@ -145,7 +135,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     controllersweeper: {
         title: "ControllerSweeper",
-        bombName: "Controller",
+        bombName: "Controllers",
         colors: {
             primary: "#ff4081",
             flagged: "#f48fb1",
@@ -155,7 +145,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     dragonsweeper: {
         title: "DragonSweeper",
-        bombName: "Dragon",
+        bombName: "Dragons",
         colors: {
             primary: "#f44336",
             flagged: "#ff8a65",
@@ -165,7 +155,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     potionsweeper: {
         title: "PotionSweeper",
-        bombName: "Potion",
+        bombName: "Potions",
         colors: {
             primary: "#ab47bc",
             flagged: "#e1bee7",
@@ -175,7 +165,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     ghostsweeper: {
         title: "GhostSweeper",
-        bombName: "Ghost",
+        bombName: "Ghosts",
         colors: {
             primary: "#bdbdbd",
             flagged: "#eeeeee",
@@ -185,7 +175,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     scrollsweeper: {
         title: "ScrollSweeper",
-        bombName: "Scroll",
+        bombName: "Scrolls",
         colors: {
             primary: "#ffe082",
             flagged: "#fff9c4",
@@ -195,7 +185,7 @@ export const themes: Record<string, ThemeConfig> = {
     },
     whiskeysweeper: {
         title: "WhiskeySweeper",
-        bombName: "Whiskey",
+        bombName: "Glasses",
         colors: {
             primary: "#d2691e",
             flagged: "#ffcc80",

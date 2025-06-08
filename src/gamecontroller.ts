@@ -66,7 +66,7 @@ export class GameController {
 
         document.title = currentTheme.title;
         gameTitleElement.textContent = currentTheme.title;
-        bombCounterElement.innerHTML = `${currentTheme.bombName} <span id="bomb-count">${this._currentGameUI.getGame().board.bombCount}</span>`;
+        bombCounterElement.innerHTML = `${currentTheme.bombName}: <span id="bomb-count">${this._currentGameUI.getGame().board.bombCount}</span>`;
 
         this._currentGameUI.setBombIcon(currentTheme.icon);
         this._currentGameUI.setBombCountElement();
@@ -79,9 +79,5 @@ export class GameController {
         Object.entries(colors).forEach(([key, value]) => {
             root.style.setProperty(`--color-${key}`, value);
         });
-    }
-
-    private applyColorModeConfig(): void {
-
     }
 }
