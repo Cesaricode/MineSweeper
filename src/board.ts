@@ -3,12 +3,12 @@ import { isInBounds } from "./util.js";
 import { directions } from "./util.js";
 
 export class Board {
-    rows: number;
-    cols: number;
-    grid: Tile[][] = [];
-    bombCount: number;
-    flagCount: number = 0;
-    bombsDeployed: boolean = false;
+    readonly rows: number;
+    readonly cols: number;
+    readonly bombCount: number;
+    private _grid: Tile[][] = [];
+    private _flagCount: number = 0;
+    private _bombsDeployed: boolean = false;
 
     constructor(rows: number, cols: number, bombCount: number) {
         this.rows = rows;
@@ -19,22 +19,22 @@ export class Board {
 
     private populateGrid(): void {
         for (let i = 0; i < this.rows; i++) {
-            this.grid[i] = [];
+            this._grid[i] = [];
             for (let j = 0; j < this.cols; j++) {
-                this.grid[i][j] = new Tile(i, j);
+                this._grid[i][j] = new Tile(i, j);
             }
         }
     }
 
     public deployBombs(excludeRow: number, excludeCol: number): void {
-        if (this.bombsDeployed) {
+        if (this._bombsDeployed) {
             throw new Error("Bombs have already been deployed.");
         }
-        const positions = this.generateCandidatePositions(excludeRow, excludeCol);
+        const positions: [number, number][] = this.generateCandidatePositions(excludeRow, excludeCol);
         this.shufflePositions(positions);
         this.placeBombs(positions);
         this.setAdjacentBombCounts();
-        this.bombsDeployed = true;
+        this._bombsDeployed = true;
     }
 
     private generateCandidatePositions(excludeRow: number, excludeCol: number): [number, number][] {
@@ -51,38 +51,36 @@ export class Board {
 
     private shufflePositions(positions: [number, number][]): void {
         for (let i = positions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
+            const j: number = Math.floor(Math.random() * (i + 1));
             [positions[i], positions[j]] = [positions[j], positions[i]];
         }
     }
 
     private placeBombs(positions: [number, number][]): void {
         for (let i = 0; i < this.bombCount; i++) {
-            const [row, col] = positions[i];
-            this.grid[row][col].setBomb();
+            const [row, col]: number[] = positions[i];
+            this._grid[row][col].setBomb();
         }
     }
 
     private setAdjacentBombCounts(): void {
-        this.grid.forEach(row => {
-            row.forEach(tile => {
-                const count = this.calcAdjacentBombCount(tile.row, tile.col);
-                tile.setAdjacentBombCount(count);
-            });
+        this.forEachTile((tile: Tile) => {
+            const count: number = this.calcAdjacentBombCount(tile);
+            tile.setAdjacentBombCount(count);
         });
     }
 
-    private calcAdjacentBombCount(row: number, col: number): number {
-        this.assertInBounds(row, col, "calcAdjacentBombCount");
-        const numRows: number = this.grid.length;
-        const numCols: number = this.grid[0].length;
+    private calcAdjacentBombCount(tile: Tile): number {
+        this.assertInBounds(tile.row, tile.col, "calcAdjacentBombCount");
+        const numRows: number = this._grid.length;
+        const numCols: number = this._grid[0].length;
         let count: number = 0;
 
         for (const [dRow, dCol] of directions) {
-            const newRow: number = row + dRow;
-            const newCol: number = col + dCol;
+            const newRow: number = tile.row + dRow;
+            const newCol: number = tile.col + dCol;
 
-            if (isInBounds(newRow, newCol, numRows, numCols) && this.grid[newRow][newCol].isBomb) {
+            if (isInBounds(newRow, newCol, numRows, numCols) && this._grid[newRow][newCol].isBomb()) {
                 count++;
             }
         }
@@ -91,19 +89,18 @@ export class Board {
 
     public getTile(row: number, col: number): Tile {
         this.assertInBounds(row, col, "getTile");
-        return this.grid[row][col];
+        return this._grid[row][col];
     }
 
-    public toggleFlag(row: number, col: number): void {
-        this.assertInBounds(row, col, "toggleFlag");
-        const tile: Tile = this.grid[row][col];
+    public toggleFlag(tile: Tile): void {
+        this.assertInBounds(tile.row, tile.col, "toggleFlag");
 
         if (tile.status === "hidden") {
             tile.setStatus("flagged");
-            this.flagCount++;
+            this._flagCount++;
         } else if (tile.status === "flagged") {
             tile.setStatus("hidden");
-            this.flagCount--;
+            this._flagCount--;
         }
     }
 
@@ -126,5 +123,33 @@ export class Board {
         }
 
         return neighbors;
+    }
+
+    public get flagCount(): number {
+        return this._flagCount;
+    }
+
+    public revealBombs(): void {
+        this.forEachTile(tile => {
+            if (tile.isBomb() && tile.status !== "revealed") {
+                tile.setStatus("revealed");
+            }
+        });
+    }
+
+    public revealIncorrectFlags(): void {
+        this.forEachTile(tile => {
+            if (tile.status === "flagged" && !tile.isBomb()) {
+                tile.setStatus("wrong-flag");
+            }
+        });
+    }
+
+    public forEachTile(callback: (tile: Tile) => void): void {
+        this._grid.forEach(row => {
+            row.forEach(tile => {
+                callback(tile);
+            });
+        });
     }
 }

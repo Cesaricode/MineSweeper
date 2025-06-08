@@ -7,40 +7,40 @@ import { directions } from "./util.js";
 export type GameStatus = "playing" | "won" | "lost";
 
 export class Game {
-    rows: number;
-    cols: number;
-    difficulty: Difficulty;
-    board: Board;
-    isFirstMove: boolean = true;
-    status: GameStatus = "playing";
-    tilesToReveal: number;
+    readonly rows: number;
+    readonly cols: number;
+    readonly difficulty: Difficulty;
+    private readonly _board: Board;
+    private _isFirstMove: boolean = true;
+    private _status: GameStatus = "playing";
+    private _tilesToReveal: number;
 
     constructor(rows: number, cols: number, difficulty: Difficulty) {
         this.rows = rows;
         this.cols = cols;
         this.difficulty = difficulty;
         const bombCount = getBombCount(rows, cols, difficulty);
-        this.board = new Board(rows, cols, bombCount);
-        this.tilesToReveal = rows * cols - bombCount;
+        this._board = new Board(rows, cols, bombCount);
+        this._tilesToReveal = rows * cols - bombCount;
     }
 
     public reveal(row: number, col: number): void {
         this.assertPlaying();
         this.ensureBombsDeployed(row, col);
 
-        const tile: Tile = this.board.getTile(row, col);
+        const tile: Tile = this._board.getTile(row, col);
 
-        if (tile.isBomb) {
+        if (tile.isBomb()) {
             this.triggerBomb();
             return;
         }
 
-        if (tile.status === "revealed" && tile.adjacentBombCount !== 0 && this.status === "playing") {
+        if (tile.status === "revealed" && tile.adjacentBombCount !== 0) {
             this.chordReveal(tile);
             return;
         }
 
-        if (tile.adjacentBombCount === 0 && this.status === "playing") {
+        if (tile.adjacentBombCount === 0) {
             this.floodReveal(row, col);
         } else {
             this.revealTile(tile);
@@ -49,7 +49,7 @@ export class Game {
 
     private chordReveal(tile: Tile): void {
         if (tile.status !== "revealed" || tile.adjacentBombCount === 0) return;
-        const neighbors: Tile[] = this.board.getNeighbors(tile);
+        const neighbors: Tile[] = this._board.getNeighbors(tile);
         const flaggedCount: number = neighbors.filter(t => t.status === "flagged").length;
 
         if (flaggedCount === tile.adjacentBombCount) {
@@ -68,9 +68,9 @@ export class Game {
     }
 
     private ensureBombsDeployed(row: number, col: number): void {
-        if (this.isFirstMove) {
-            this.board.deployBombs(row, col);
-            this.isFirstMove = false;
+        if (this._isFirstMove) {
+            this._board.deployBombs(row, col);
+            this._isFirstMove = false;
         }
     }
 
@@ -85,7 +85,7 @@ export class Game {
                 continue;
             }
             visited.add(key);
-            const tile = this.board.getTile(r, c);
+            const tile = this._board.getTile(r, c);
             if (tile.status !== "hidden") continue;
             this.floodRevealTile(tile);
 
@@ -105,7 +105,7 @@ export class Game {
 
     private floodRevealTile(tile: Tile): void {
         this.assertHidden(tile);
-        if (tile.isBomb) {
+        if (tile.isBomb()) {
             return;
         }
         tile.reveal();
@@ -113,51 +113,31 @@ export class Game {
     }
 
     private triggerBomb(): void {
-        this.status = "lost";
-        this.revealBombs();
-        this.revealFlagResults();
-    }
-
-    private revealBombs(): void {
-        this.board.grid.forEach(row => {
-            row.forEach(tile => {
-                if (tile.isBomb && tile.status !== "revealed") {
-                    tile.setStatus("revealed");
-                }
-            });
-        });
-    }
-
-    private revealFlagResults(): void {
-        this.board.grid.forEach(row => {
-            row.forEach(tile => {
-                if (tile.status === "flagged" && !tile.isBomb) {
-                    tile.setStatus("wrong-flag");
-                }
-            });
-        });
+        this._status = "lost";
+        this._board.revealBombs();
+        this._board.revealIncorrectFlags();
     }
 
     public toggleFlag(row: number, col: number): void {
         this.assertPlaying();
-        this.board.toggleFlag(row, col);
+        this._board.toggleFlag(this._board.getTile(row, col));
     }
 
     public getTile(row: number, col: number): Tile {
-        return this.board.getTile(row, col);
+        return this._board.getTile(row, col);
     }
 
-    public getStatus(): GameStatus {
-        return this.status;
+    public get status(): GameStatus {
+        return this._status;
     }
 
-    public getBoard(): Board {
-        return this.board;
+    public get board(): Board {
+        return this._board;
     }
 
     private assertPlaying(): void {
-        if (this.status !== "playing") {
-            throw new Error(`Cannot modify board state; game is already ${this.status}`);
+        if (this._status !== "playing") {
+            throw new Error(`Cannot modify board state; game is already ${this._status}`);
         }
     }
 
@@ -168,13 +148,13 @@ export class Game {
     }
 
     public getNeighbors(tile: Tile): Tile[] {
-        return this.board.getNeighbors(tile);
+        return this._board.getNeighbors(tile);
     }
 
     private handleSuccessfulReveal(): void {
-        this.tilesToReveal--;
-        if (this.tilesToReveal === 0) {
-            this.status = "won";
+        this._tilesToReveal--;
+        if (this._tilesToReveal === 0) {
+            this._status = "won";
         }
     }
 }

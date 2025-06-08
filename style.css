@@ -1,9 +1,71 @@
 :root {
-    --color-primary: #bb86fc;
+    --color-primary: #9e9e9e;
     --color-background: #121212;
     --color-tile-bg: #1e1e1e;
     --color-flagged: #ffb300;
     --color-bomb: #b00020;
+    --color-text: #eee;
+
+    --color-input-bg: #2a2a2a;
+    --color-input-text: #eee;
+    --color-input-border: #444;
+    --color-tile-border: #444;
+    --color-tile-hover: #333;
+    --color-highlight-bg: #444;
+    --color-highlight-border: #888;
+    --color-revealed-bg: #2c2c2c;
+    --color-revealed-border: #666;
+    --color-flagged-text: #3e2723;
+    --color-flagged-border: #cc8400;
+    --color-bomb-text: #fff;
+    --color-bomb-border: #800018;
+    --color-label: #ccc;
+    --color-box-shadow: rgba(0, 0, 0, 0.5);
+    --color-counter-shadow: rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme='dark'] {
+    --color-background: #121212;
+    --color-tile-bg: #1e1e1e;
+    --color-text: #eee;
+    --color-input-bg: #2a2a2a;
+    --color-input-text: #eee;
+    --color-input-border: #444;
+    --color-tile-border: #444;
+    --color-tile-hover: #333;
+    --color-highlight-bg: #444;
+    --color-highlight-border: #888;
+    --color-revealed-bg: #2c2c2c;
+    --color-revealed-border: #666;
+    --color-flagged-text: #3e2723;
+    --color-flagged-border: #cc8400;
+    --color-bomb-text: #fff;
+    --color-bomb-border: #800018;
+    --color-label: #ccc;
+    --color-box-shadow: rgba(0, 0, 0, 0.5);
+    --color-counter-shadow: rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme='light'] {
+    --color-background: #f9f9f9;
+    --color-tile-bg: #ffffff;
+    --color-text: #111;
+    --color-input-bg: #ffffff;
+    --color-input-text: #111;
+    --color-input-border: #ccc;
+    --color-tile-border: #bbb;
+    --color-tile-hover: #eee;
+    --color-highlight-bg: #ccc;
+    --color-highlight-border: #666;
+    --color-revealed-bg: #d5d5d5;
+    --color-revealed-border: #999;
+    --color-flagged-text: #3e2723;
+    --color-flagged-border: #cc8400;
+    --color-bomb-text: #fff;
+    --color-bomb-border: #800018;
+    --color-label: #333;
+    --color-box-shadow: rgba(0, 0, 0, 0.1);
+    --color-counter-shadow: rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -14,7 +76,7 @@
 
 body {
     background-color: var(--color-background);
-    color: #eee;
+    color: var(--color-text);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     text-align: center;
     margin: 20px;
@@ -43,12 +105,12 @@ h1 {
     background-color: var(--color-tile-bg);
     padding: 16px 24px;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 10px var(--color-box-shadow);
     width: fit-content;
 }
 
 #settings-form label {
-    color: #ccc;
+    color: var(--color-label);
     font-size: 14px;
     display: flex;
     flex-direction: column;
@@ -59,9 +121,9 @@ h1 {
 #settings-form select {
     margin-top: 4px;
     padding: 6px 8px;
-    background-color: #2a2a2a;
-    color: #eee;
-    border: 1px solid #444;
+    background-color: var(--color-input-bg);
+    color: var(--color-input-text);
+    border: 1px solid var(--color-input-border);
     border-radius: 4px;
     font-size: 14px;
     outline: none;
@@ -96,6 +158,9 @@ h1 {
     justify-content: center;
     margin: 0 auto;
     font-size: 0;
+    width: fit-content;
+    height: fit-content;
+    border: solid 2px var(--color-tile-border);
 }
 
 .tile {
@@ -111,43 +176,42 @@ h1 {
     margin: 0;
     overflow: hidden;
     cursor: pointer;
-    border-radius: 4px;
-    box-shadow: inset 0 0 0 2px #444;
+    box-shadow: inset 0 0 0 2px var(--color-tile-border);
     background-color: var(--color-background);
-    color: #eee;
+    color: var(--color-text);
     transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .tile:hover:not(.revealed):not(.flagged) {
-    background-color: #333;
+    background-color: var(--color-tile-hover);
 }
 
 .highlighted {
-    background-color: #444 !important;
-    box-shadow: inset 0 0 0 2px #888;
+    background-color: var(--color-highlight-bg) !important;
+    box-shadow: inset 0 0 0 2px var(--color-highlight-border);
 }
 
 .revealed {
-    background-color: #2c2c2c;
+    background-color: var(--color-revealed-bg);
     cursor: default;
-    border-color: #666;
+    border-color: var(--color-revealed-border);
     color: var(--color-primary);
     font-weight: 600;
 }
 
 .flagged {
     background-color: var(--color-flagged);
-    color: #3e2723;
+    color: var(--color-flagged-text);
     font-weight: bold;
-    border-color: #cc8400;
+    border-color: var(--color-flagged-border);
     cursor: pointer;
 }
 
 .bomb {
     background-color: var(--color-bomb);
-    color: #fff;
+    color: var(--color-bomb-text);
     font-weight: 900;
-    border-color: #800018;
+    border-color: var(--color-bomb-border);
 }
 
 #bomb-counter {
@@ -155,7 +219,7 @@ h1 {
     padding: 12px 20px;
     background-color: var(--color-tile-bg);
     border-radius: 8px;
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 8px var(--color-counter-shadow);
     color: var(--color-primary);
     font-size: 1.2rem;
     font-weight: bold;
@@ -171,7 +235,7 @@ h1 {
     padding: 12px 20px;
     background-color: var(--color-tile-bg);
     border-radius: 8px;
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 8px var(--color-counter-shadow);
     color: var(--color-primary);
     font-size: 1.2rem;
     font-weight: bold;
@@ -188,16 +252,16 @@ h1 {
 }
 
 #mode-switcher label {
-    color: #ccc;
+    color: var(--color-label);
     font-size: 14px;
 }
 
 #mode-switcher select {
     margin-left: 8px;
     padding: 6px 8px;
-    background-color: #2a2a2a;
-    color: #eee;
-    border: 1px solid #444;
+    background-color: var(--color-input-bg);
+    color: var(--color-input-text);
+    border: 1px solid var(--color-input-border);
     border-radius: 4px;
     font-size: 14px;
     outline: none;
@@ -211,9 +275,9 @@ h1 {
 .wrong-flag {
     background-color: var(--color-bomb);
     opacity: 0.8;
-    color: #fff;
+    color: var(--color-bomb-text);
     font-weight: 700;
-    border-color: #800018;
+    border-color: var(--color-bomb-border);
 }
 
 .revealed[data-value="1"] {

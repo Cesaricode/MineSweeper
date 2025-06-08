@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Turtlesweeper</title>
+    <title>MineSweeper</title>
     <link rel="stylesheet" href="/style.css">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <script type="module" src="/build/index.js" defer></script>
@@ -21,26 +21,44 @@
                 <option value="cookiesweeper">Cookiesweeper</option>
                 <option value="catsweeper">Catsweeper</option>
                 <option value="aliensweeper">Aliensweeper</option>
+                <option value="frogsweeper">Frogsweeper</option>
+                <option value="gemsweeper">Gemsweeper</option>
+                <option value="bonesweeper">Bonesweeper</option>
+                <option value="cupcakesweeper">Cupcakesweeper</option>
+                <option value="icesweeper">Icesweeper</option>
+                <option value="volcanosweeper">Volcanosweeper</option>
+                <option value="controllersweeper">ControllerSweeper</option>
+                <option value="dragonsweeper">DragonSweeper</option>
+                <option value="potionsweeper">PotionSweeper</option>
+                <option value="ghostsweeper">GhostSweeper</option>
+                <option value="scrollsweeper">ScrollSweeper</option>
+                <option value="whiskeysweeper">Whiskeysweeper</option>
             </select>
         </label>
+        <select id="theme-mode">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+        </select>
     </div>
-    <h1 id="game-title">Turtlesweeper</h1>
+    <h1 id="game-title">MineSweeper</h1>
     <div id="settings-wrapper">
         <div id="time-counter">Time: <span id="time">0</span></div>
         <form id="settings-form">
-            <label>Rows: <input type="number" id="rows" value="20" /></label>
-            <label>Columns: <input type="number" id="cols" value="20" /></label>
+            <label>Rows: <input type="number" id="rows" value="20" max="50" /></label>
+            <label>Columns: <input type="number" id="cols" value="20" max="50" /></label>
             <label>
                 Difficulty:
                 <select id="difficulty">
                     <option value="easy">Easy</option>
                     <option value="medium">Medium</option>
                     <option value="hard">Hard</option>
+                    <option value="brutal">Brutal</option>
+                    <option value="impossible">Impossible</option>
                 </select>
             </label>
             <button type="submit">Start Game</button>
         </form>
-        <div id="bomb-counter">Turtles: <span id="bomb-count">0</span></div>
+        <div id="bomb-counter">Mine<span id="bomb-count"> 0 </span></div>
     </div>
     <div id="board"></div>
 </body>

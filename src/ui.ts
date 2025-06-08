@@ -3,16 +3,16 @@ import { Tile } from "./tile.js";
 
 export class GameUI {
 
-    private game: Game;
-    private boardElement!: HTMLElement;
-    private bombCountElement!: HTMLElement;
-    private timerElement!: HTMLElement;
-    private timerIntervalId: number | null = null;
-    private startTime: number = 0;
-    private elapsedTime: number = 0;
-    private timerRunning: boolean = false;
-    private bombIcon: string = "💣";
-    private tileListeners: Map<string, {
+    private _game: Game;
+    private _boardElement!: HTMLElement;
+    private _bombCountElement!: HTMLElement;
+    private _timerElement!: HTMLElement;
+    private _timerIntervalId: number | null = null;
+    private _startTime: number = 0;
+    private _elapsedTime: number = 0;
+    private _timerRunning: boolean = false;
+    private _bombIcon: string = "💣";
+    private _tileListeners: Map<string, {
         click: EventListener;
         contextmenu: EventListener;
         mousedown?: EventListener;
@@ -22,7 +22,7 @@ export class GameUI {
 
 
     constructor(boardElementId: string, rows: number, cols: number, difficulty: string) {
-        this.game = new Game(rows, cols, difficulty);
+        this._game = new Game(rows, cols, difficulty);
         this.setBoardElement(boardElementId);
         this.setBombCountElement();
         this.setTimerElement();
@@ -32,66 +32,66 @@ export class GameUI {
     private setTimerElement(): void {
         const element: HTMLElement | null = document.getElementById("time");
         if (!element) throw new Error("Timer element not found.");
-        this.timerElement = element;
+        this._timerElement = element;
     }
 
     private setBoardElement(boardElementId: string,): void {
         const element: HTMLElement | null = document.getElementById(boardElementId);
         if (!element) throw new Error("Board element not found.");
-        this.boardElement = element;
+        this._boardElement = element;
     }
 
     public setBombCountElement(): void {
-        const bombCounter = document.getElementById("bomb-count");
+        const bombCounter: HTMLElement | null = document.getElementById("bomb-count");
         if (!bombCounter) throw new Error("Bomb counter element not found.");
-        this.bombCountElement = bombCounter;
+        this._bombCountElement = bombCounter;
     }
 
     private updateBombCount(): void {
-        this.bombCountElement.textContent = (this.game.board.bombCount - this.game.board.flagCount).toString();
+        this._bombCountElement.textContent = (this._game.board.bombCount - this._game.board.flagCount).toString();
     }
 
     private updateTimerElement(): void {
-        const seconds: number = Math.floor(this.elapsedTime / 1000);
-        this.timerElement.textContent = seconds.toString().padStart(3, '0');
+        const seconds: number = Math.floor(this._elapsedTime / 1000);
+        this._timerElement.textContent = seconds.toString().padStart(3, '0');
     }
 
     private startTimer(): void {
-        if (this.timerRunning) return;
-        this.startTime = Date.now() - this.elapsedTime;
-        this.timerRunning = true;
+        if (this._timerRunning) return;
+        this._startTime = Date.now() - this._elapsedTime;
+        this._timerRunning = true;
 
-        this.timerIntervalId = window.setInterval(() => {
-            this.elapsedTime = Date.now() - this.startTime;
+        this._timerIntervalId = window.setInterval(() => {
+            this._elapsedTime = Date.now() - this._startTime;
             this.updateTimerElement();
         }, 1000);
     }
 
     private stopTimer(): void {
-        if (this.timerIntervalId !== null) {
-            clearInterval(this.timerIntervalId);
-            this.timerIntervalId = null;
-            this.timerRunning = false;
+        if (this._timerIntervalId !== null) {
+            window.clearInterval(this._timerIntervalId);
+            this._timerIntervalId = null;
+            this._timerRunning = false;
         }
     }
 
     private resetTimer(): void {
         this.stopTimer();
-        this.elapsedTime = 0;
+        this._elapsedTime = 0;
         this.updateTimerElement();
     }
 
     public renderBoard(): void {
         this.clearTileEventListeners();
-        this.prepareBoardElement(this.boardElement);
+        this.prepareBoardElement(this._boardElement);
         this.updateBombCount();
 
-        for (let row = 0; row < this.game.rows; row++) {
-            for (let col = 0; col < this.game.cols; col++) {
-                const tile: Tile = this.game.getTile(row, col);
+        for (let row = 0; row < this._game.rows; row++) {
+            for (let col = 0; col < this._game.cols; col++) {
+                const tile: Tile = this._game.getTile(row, col);
                 const tileElement: HTMLElement = this.createTileElement(tile, row, col);
-                this.attachTileEventListeners(tileElement, tile, row, col, this.boardElement);
-                this.boardElement.appendChild(tileElement);
+                this.attachTileEventListeners(tileElement, tile, row, col, this._boardElement);
+                this._boardElement.appendChild(tileElement);
             }
         }
 
@@ -100,7 +100,7 @@ export class GameUI {
 
     private prepareBoardElement(boardElement: HTMLElement): void {
         boardElement.innerHTML = "";
-        boardElement.style.gridTemplateColumns = `repeat(${this.game.cols}, 30px)`;
+        boardElement.style.gridTemplateColumns = `repeat(${this._game.cols}, 30px)`;
     }
 
     private createTileElement(tile: Tile, row: number, col: number): HTMLElement {
@@ -112,7 +112,7 @@ export class GameUI {
         switch (tile.status) {
             case "revealed":
                 tileElement.classList.add("revealed");
-                tileElement.textContent = tile.isBomb ? this.bombIcon :
+                tileElement.textContent = tile.isBomb() ? this._bombIcon :
                     tile.adjacentBombCount ? tile.adjacentBombCount.toString() : "";
                 tileElement.dataset.value = tile.adjacentBombCount.toString();
                 break;
@@ -133,10 +133,10 @@ export class GameUI {
 
         const onClick: EventListener = (e: Event): void => {
             try {
-                if (!this.timerRunning && this.game.getStatus() === "playing") {
+                if (!this._timerRunning && this._game.status === "playing") {
                     this.startTimer();
                 }
-                this.game.reveal(row, col);
+                this._game.reveal(row, col);
                 this.renderBoard();
             } catch (err) {
                 alert((err as Error).message);
@@ -146,7 +146,7 @@ export class GameUI {
         const onContextMenu: EventListener = (e: Event): void => {
             e.preventDefault();
             try {
-                this.game.toggleFlag(row, col);
+                this._game.toggleFlag(row, col);
                 this.renderBoard();
             } catch (err) {
                 alert((err as Error).message);
@@ -168,7 +168,7 @@ export class GameUI {
                 ? (): void => this.clearHighlights()
                 : undefined;
 
-        this.tileListeners.set(`${row},${col}`, {
+        this._tileListeners.set(`${row},${col}`, {
             click: onClick,
             contextmenu: onContextMenu,
             mousedown: onMouseDown,
@@ -185,12 +185,12 @@ export class GameUI {
     }
 
     private clearTileEventListeners(): void {
-        for (const [key, listeners] of this.tileListeners.entries()) {
+        for (const [key, listeners] of this._tileListeners.entries()) {
             const [rowStr, colStr]: string[] = key.split(",");
             const row: number = parseInt(rowStr, 10);
             const col: number = parseInt(colStr, 10);
 
-            const tileElement: HTMLElement | null = this.boardElement.querySelector(
+            const tileElement: HTMLElement | null = this._boardElement.querySelector(
                 `.tile[data-row="${row}"][data-col="${col}"]`
             );
 
@@ -206,13 +206,13 @@ export class GameUI {
                 tileElement.removeEventListener("mouseleave", listeners.mouseleave);
         }
 
-        this.tileListeners.clear();
+        this._tileListeners.clear();
     }
 
     private handleHighlightNeighbors(e: MouseEvent, tile: Tile, boardEl: HTMLElement): void {
         if (e.button !== 0) return;
 
-        const neighbors: Tile[] = this.game.getNeighbors(tile);
+        const neighbors: Tile[] = this._game.getNeighbors(tile);
 
         for (const neighbor of neighbors) {
             if (neighbor.status === "hidden") {
@@ -236,7 +236,7 @@ export class GameUI {
     }
 
     private checkGameStatus(): void {
-        const status: GameStatus = this.game.getStatus();
+        const status: GameStatus = this._game.status;
         if (status !== "playing") {
             this.stopTimer();
             setTimeout(() => alert(`You ${status}!`), 100);
@@ -245,16 +245,16 @@ export class GameUI {
     }
 
     public setBombIcon(icon: string) {
-        this.bombIcon = icon;
+        this._bombIcon = icon;
     }
 
     public destroy(): void {
         this.clearTileEventListeners();
         this.resetTimer();
-        this.boardElement.innerHTML = "";
+        this._boardElement.innerHTML = "";
     }
 
     public getGame(): Game {
-        return this.game;
+        return this._game;
     }
 }
