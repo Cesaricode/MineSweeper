@@ -30,6 +30,10 @@ export class Game {
 
         const tile: Tile = this._board.getTile(row, col);
 
+        if (tile.isFlagged()) {
+            return;
+        }
+
         if (tile.isBomb()) {
             this.triggerBomb();
             return;

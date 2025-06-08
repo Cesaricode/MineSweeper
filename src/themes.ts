@@ -193,4 +193,14 @@ export const themes: Record<string, ThemeConfig> = {
         },
         icon: "🥃",
     },
+    zombiesweeper: {
+        title: "ZombieSweeper",
+        bombName: "Zombies",
+        colors: {
+            primary: "#81d4fa",
+            flagged: "#ffd54f",
+            bomb: "#4caf50",
+        },
+        icon: "🧟",
+    },
 };

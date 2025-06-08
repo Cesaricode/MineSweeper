@@ -41,4 +41,8 @@ export class Tile {
         this._status = "revealed";
         return true;
     }
+
+    public isFlagged(): boolean {
+        return (this._status === "flagged") ? true : false;
+    }
 }
