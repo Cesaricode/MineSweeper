@@ -388,6 +388,38 @@ h1 {
     transform: scale(0.95);
 }
 
+#sound-toggle {
+    background-color: var(--color-primary);
+    color: var(--color-background);
+    font-weight: bold;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-left: 12px;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 0 6px var(--color-box-shadow);
+    outline: none;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+#sound-toggle[aria-pressed="true"] {
+    background-color: var(--color-highlight-bg);
+    color: var(--color-bomb-text);
+}
+
+#sound-toggle:hover {
+    background-color: var(--color-flagged);
+    color: var(--color-flagged-text);
+    transform: scale(1.05);
+}
+
+#sound-toggle:active {
+    transform: scale(0.97);
+}
+
 .revealed[data-value="1"] {
     color: #64b5f6;
 }

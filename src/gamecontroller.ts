@@ -2,22 +2,26 @@ import { themes, ThemeKey } from "./themes.js";
 import { Game } from "./game.js";
 import { ThemeManager } from "./thememanager.js";
 import { UIRenderer } from "./uirenderer.js";
+import { SoundManager } from "./soundmanager.js";
 
 export class GameController {
 
     private _game: Game | null = null;
     private _ui: UIRenderer;
     private _themeManager: ThemeManager;
+    private _soundManager: SoundManager;
     private _currentThemeKey: ThemeKey = "minesweeper";
 
     constructor() {
-        this._themeManager = new ThemeManager();
         this._ui = new UIRenderer();
+        this._themeManager = new ThemeManager();
+        this._soundManager = new SoundManager();
         this.setupUICallbacks();
     }
 
     init(): void {
         this.bindEvents();
+        this.bindSoundToggle();
         this.startGameFromSettings();
     }
 
@@ -69,6 +73,27 @@ export class GameController {
         });
     }
 
+    private bindSoundToggle(): void {
+        const btn: HTMLElement | null = document.getElementById("sound-toggle") as HTMLButtonElement | null;
+        if (!btn) return;
+
+        const saved: string | null = localStorage.getItem("minesweeper-sound-muted");
+        if (saved !== null) {
+            const muted: boolean = saved === "true";
+            this._soundManager.setMuted(muted);
+            btn.ariaPressed = muted ? "true" : "false";
+            btn.textContent = muted ? "🔇" : "🔊";
+        }
+
+        btn.addEventListener("click", () => {
+            const muted: boolean = !this._soundManager.muted;
+            this._soundManager.setMuted(muted);
+            btn.ariaPressed = muted ? "true" : "false";
+            btn.textContent = muted ? "🔇" : "🔊";
+            localStorage.setItem("minesweeper-sound-muted", muted ? "true" : "false");
+        });
+    }
+
     private startGameFromSettings(): void {
         this._ui.reset();
 
@@ -89,6 +114,7 @@ export class GameController {
         if (!this._game) throw new Error("Cannot set game event listeners - missing game");
 
         this._game.addEventListener("tileRevealed", (e: Event) => {
+            this._soundManager.playTileClick();
             const detail: { row: number; col: number; } = (e as CustomEvent).detail as { row: number; col: number; };
             if (detail && typeof detail.row === "number" && typeof detail.col === "number") {
                 this._ui.updateTile(this._game!, detail.row, detail.col);
@@ -99,6 +125,7 @@ export class GameController {
         });
 
         this._game.addEventListener("flagToggled", (e: Event) => {
+            this._soundManager.playFlag();
             const detail: { row: number; col: number; } = (e as CustomEvent).detail as { row: number; col: number; };
             if (detail && typeof detail.row === "number" && typeof detail.col === "number") {
                 this._ui.updateTile(this._game!, detail.row, detail.col);
@@ -109,11 +136,13 @@ export class GameController {
         });
 
         this._game.addEventListener("gameWon", () => {
+            this._soundManager.playVictory();
             this._ui.endGame(this._game!);
             this._ui.showGameOverScreen("You won!");
         });
 
         this._game.addEventListener("gameLost", () => {
+            this._soundManager.playBomb();
             this._ui.endGame(this._game!);
             this._ui.showGameOverScreen("You lost!");
         });

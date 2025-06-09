@@ -2,16 +2,19 @@ import { themes } from "./themes.js";
 import { Game } from "./game.js";
 import { ThemeManager } from "./thememanager.js";
 import { UIRenderer } from "./uirenderer.js";
+import { SoundManager } from "./soundmanager.js";
 export class GameController {
     constructor() {
         this._game = null;
         this._currentThemeKey = "minesweeper";
-        this._themeManager = new ThemeManager();
         this._ui = new UIRenderer();
+        this._themeManager = new ThemeManager();
+        this._soundManager = new SoundManager();
         this.setupUICallbacks();
     }
     init() {
         this.bindEvents();
+        this.bindSoundToggle();
         this.startGameFromSettings();
     }
     bindEvents() {
@@ -61,6 +64,25 @@ export class GameController {
             }
         });
     }
+    bindSoundToggle() {
+        const btn = document.getElementById("sound-toggle");
+        if (!btn)
+            return;
+        const saved = localStorage.getItem("minesweeper-sound-muted");
+        if (saved !== null) {
+            const muted = saved === "true";
+            this._soundManager.setMuted(muted);
+            btn.ariaPressed = muted ? "true" : "false";
+            btn.textContent = muted ? "🔇" : "🔊";
+        }
+        btn.addEventListener("click", () => {
+            const muted = !this._soundManager.muted;
+            this._soundManager.setMuted(muted);
+            btn.ariaPressed = muted ? "true" : "false";
+            btn.textContent = muted ? "🔇" : "🔊";
+            localStorage.setItem("minesweeper-sound-muted", muted ? "true" : "false");
+        });
+    }
     startGameFromSettings() {
         this._ui.reset();
         const rows = Number(document.getElementById("rows").value);
@@ -77,6 +99,7 @@ export class GameController {
         if (!this._game)
             throw new Error("Cannot set game event listeners - missing game");
         this._game.addEventListener("tileRevealed", (e) => {
+            this._soundManager.playTileClick();
             const detail = e.detail;
             if (detail && typeof detail.row === "number" && typeof detail.col === "number") {
                 this._ui.updateTile(this._game, detail.row, detail.col);
@@ -87,6 +110,7 @@ export class GameController {
             this._ui.updateBombCount(this._game);
         });
         this._game.addEventListener("flagToggled", (e) => {
+            this._soundManager.playFlag();
             const detail = e.detail;
             if (detail && typeof detail.row === "number" && typeof detail.col === "number") {
                 this._ui.updateTile(this._game, detail.row, detail.col);
@@ -97,10 +121,12 @@ export class GameController {
             this._ui.updateBombCount(this._game);
         });
         this._game.addEventListener("gameWon", () => {
+            this._soundManager.playVictory();
             this._ui.endGame(this._game);
             this._ui.showGameOverScreen("You won!");
         });
         this._game.addEventListener("gameLost", () => {
+            this._soundManager.playBomb();
             this._ui.endGame(this._game);
             this._ui.showGameOverScreen("You lost!");
         });
