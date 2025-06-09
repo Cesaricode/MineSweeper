@@ -158,9 +158,21 @@ h1 {
     justify-content: center;
     margin: 0 auto;
     font-size: 0;
+    min-width: fit-content;
     width: fit-content;
     height: fit-content;
     border: solid 2px var(--color-tile-border);
+}
+
+#board-container {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    padding: 0 16px;
+    display: flex;
+    justify-content: center;
+    box-sizing: border-box;
+    scroll-padding: 16px;
 }
 
 .tile {
@@ -310,4 +322,34 @@ h1 {
 
 .revealed[data-value="8"] {
     color: #f44336;
+}
+
+@media (max-width: 700px) {
+    #settings-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: static;
+        width: fit-content;
+    }
+
+    #time-counter,
+    #bomb-counter {
+        position: static;
+        transform: none;
+        margin: 8px 0;
+        width: fit-content;
+        box-sizing: border-box;
+        text-align: center;
+        left: auto;
+        right: auto;
+        top: auto;
+    }
+
+    #settings-form {
+        width: fit-content;
+        min-width: 0;
+        box-sizing: border-box;
+        justify-content: center;
+    }
 }
