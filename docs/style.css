@@ -167,8 +167,6 @@ h1 {
     gap: 0;
     font-size: 0;
     width: fit-content;
-    min-width: 0;
-    max-width: 100%;
     border: solid 2px var(--color-tile-border);
 }
 
