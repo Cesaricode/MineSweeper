@@ -2,11 +2,12 @@ import { Board } from "./board.js";
 import { difficultyBombRange, getBombCount } from "./difficulty.js";
 import { isInBounds } from "./util.js";
 import { directions } from "./util.js";
-export class Game {
+export class Game extends EventTarget {
     constructor(rows, cols, difficulty) {
+        super();
         this._isFirstMove = true;
         this._status = "playing";
-        const isValid = (n) => n >= 5 && n <= 50;
+        const isValid = (n) => n >= 5 && n <= 100;
         if (!isValid(rows))
             throw new Error("Invalid row count");
         if (!isValid(cols))
@@ -59,7 +60,7 @@ export class Game {
     revealTile(tile) {
         this.assertHidden(tile);
         tile.reveal();
-        this.handleSuccessfulReveal();
+        this.handleSuccessfulReveal(tile.row, tile.col);
     }
     ensureBombsDeployed(row, col) {
         if (this._isFirstMove) {
@@ -100,16 +101,20 @@ export class Game {
             return;
         }
         tile.reveal();
-        this.handleSuccessfulReveal();
+        this.handleSuccessfulReveal(tile.row, tile.col);
     }
     triggerBomb() {
         this._status = "lost";
         this._board.revealBombs();
         this._board.revealIncorrectFlags();
+        this.dispatchEvent(new CustomEvent("gameLost"));
     }
     toggleFlag(row, col) {
         this.assertPlaying();
         this._board.toggleFlag(this._board.getTile(row, col));
+        this.dispatchEvent(new CustomEvent("flagToggled", {
+            detail: { row, col }
+        }));
     }
     getTile(row, col) {
         return this._board.getTile(row, col);
@@ -133,10 +138,14 @@ export class Game {
     getNeighbors(tile) {
         return this._board.getNeighbors(tile);
     }
-    handleSuccessfulReveal() {
+    handleSuccessfulReveal(row, col) {
         this._tilesToReveal--;
+        this.dispatchEvent(new CustomEvent("tileRevealed", {
+            detail: { row, col }
+        }));
         if (this._tilesToReveal === 0) {
             this._status = "won";
+            this.dispatchEvent(new CustomEvent("gameWon"));
         }
     }
 }

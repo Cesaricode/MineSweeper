@@ -1,14 +1,86 @@
 export class UIRenderer {
     constructor() {
+        this._tileElements = [];
         this._timerIntervalId = null;
         this._startTime = 0;
         this._elapsedTime = 0;
         this._timerRunning = false;
         this._bombIcon = "💣";
-        this._tileListeners = new Map();
         this.setBoardElement();
         this.setBombCountElement();
         this.setTimerElement();
+    }
+    setBoardEventHandlers(game) {
+        this._boardElement.replaceWith(this._boardElement.cloneNode(true));
+        this._boardElement = document.getElementById("board");
+        this._boardElement.addEventListener("click", (e) => {
+            const target = e.target;
+            if (!target.classList.contains("tile"))
+                return;
+            const row = Number(target.dataset.row);
+            const col = Number(target.dataset.col);
+            if (isNaN(row) || isNaN(col))
+                return;
+            if (game.status !== "playing")
+                return;
+            if (!this._timerRunning)
+                this.startTimer();
+            try {
+                game.reveal(row, col);
+            }
+            catch (err) {
+                alert(err.message);
+            }
+        });
+        this._boardElement.addEventListener("contextmenu", (e) => {
+            const target = e.target;
+            if (!target.classList.contains("tile"))
+                return;
+            e.preventDefault();
+            const row = Number(target.dataset.row);
+            const col = Number(target.dataset.col);
+            if (isNaN(row) || isNaN(col))
+                return;
+            if (game.status !== "playing")
+                return;
+            try {
+                game.toggleFlag(row, col);
+            }
+            catch (err) {
+                alert(err.message);
+            }
+        });
+        this._boardElement.addEventListener("mousedown", (e) => {
+            const target = e.target;
+            if (!target.classList.contains("tile"))
+                return;
+            const row = Number(target.dataset.row);
+            const col = Number(target.dataset.col);
+            if (isNaN(row) || isNaN(col))
+                return;
+            const tile = game.getTile(row, col);
+            if (tile.status === "revealed" &&
+                tile.adjacentBombCount > 0 &&
+                e.button === 0) {
+                this.handleHighlightNeighbors(e, tile, this._boardElement, game);
+            }
+        });
+        this._boardElement.addEventListener("mouseup", (e) => {
+            const target = e.target;
+            if (!target.classList.contains("tile"))
+                return;
+            const row = Number(target.dataset.row);
+            const col = Number(target.dataset.col);
+            if (isNaN(row) || isNaN(col))
+                return;
+            const tile = game.getTile(row, col);
+            if (tile.status === "revealed" && tile.adjacentBombCount > 0) {
+                this.clearHighlights();
+            }
+        });
+        this._boardElement.addEventListener("mouseleave", (e) => {
+            this.clearHighlights();
+        });
     }
     setTimerElement() {
         const element = document.getElementById("time");
@@ -58,28 +130,38 @@ export class UIRenderer {
         this.updateTimerElement();
     }
     renderBoard(game) {
-        this.clearTileEventListeners();
         this.prepareBoardElement(this._boardElement, game);
-        this.updateBombCount(game);
-        for (let row = 0; row < game.rows; row++) {
-            for (let col = 0; col < game.cols; col++) {
+        this._tileElements = [];
+        for (let row = 0; row < game.board.rows; row++) {
+            const rowElements = [];
+            for (let col = 0; col < game.board.cols; col++) {
                 const tile = game.getTile(row, col);
                 const tileElement = this.createTileElement(tile, row, col);
-                this.attachTileEventListeners(tileElement, tile, row, col, this._boardElement, game);
                 this._boardElement.appendChild(tileElement);
+                rowElements.push(tileElement);
             }
+            this._tileElements.push(rowElements);
         }
-        this.checkGameStatus(game);
     }
-    prepareBoardElement(boardElement, game) {
-        boardElement.innerHTML = "";
-        boardElement.style.gridTemplateColumns = `repeat(${game.cols}, 30px)`;
+    updateTile(game, row, col) {
+        var _a, _b;
+        const tile = game.getTile(row, col);
+        const tileElement = (_b = (_a = this._tileElements) === null || _a === void 0 ? void 0 : _a[row]) === null || _b === void 0 ? void 0 : _b[col];
+        if (tileElement) {
+            this.applyTileState(tileElement, tile);
+        }
     }
-    createTileElement(tile, row, col) {
-        const tileElement = document.createElement("div");
+    applyTileState(tileElement, tile) {
+        var _a;
+        const prevState = tileElement.dataset.state;
+        const newState = tile.status;
+        if (prevState === newState && tileElement.dataset.value === ((_a = tile.adjacentBombCount) === null || _a === void 0 ? void 0 : _a.toString())) {
+            return;
+        }
+        tileElement.dataset.state = newState;
         tileElement.className = "tile";
-        tileElement.dataset.row = row.toString();
-        tileElement.dataset.col = col.toString();
+        tileElement.textContent = "";
+        tileElement.removeAttribute("data-value");
         switch (tile.status) {
             case "revealed":
                 tileElement.classList.add("revealed");
@@ -96,74 +178,18 @@ export class UIRenderer {
                 tileElement.textContent = "❌";
                 break;
         }
+    }
+    prepareBoardElement(boardElement, game) {
+        boardElement.innerHTML = "";
+        boardElement.style.gridTemplateColumns = `repeat(${game.cols}, 30px)`;
+    }
+    createTileElement(tile, row, col) {
+        const tileElement = document.createElement("div");
+        tileElement.className = "tile";
+        tileElement.dataset.row = row.toString();
+        tileElement.dataset.col = col.toString();
+        this.applyTileState(tileElement, tile);
         return tileElement;
-    }
-    attachTileEventListeners(tileElement, tile, row, col, boardEl, game) {
-        const onClick = (e) => {
-            try {
-                if (!this._timerRunning && game.status === "playing") {
-                    this.startTimer();
-                }
-                game.reveal(row, col);
-                this.renderBoard(game);
-            }
-            catch (err) {
-                alert(err.message);
-            }
-        };
-        const onContextMenu = (e) => {
-            e.preventDefault();
-            try {
-                game.toggleFlag(row, col);
-                this.renderBoard(game);
-            }
-            catch (err) {
-                alert(err.message);
-            }
-        };
-        const onMouseDown = tile.status === "revealed" && tile.adjacentBombCount > 0
-            ? (e) => this.handleHighlightNeighbors(e, tile, boardEl, game)
-            : undefined;
-        const onMouseUp = tile.status === "revealed" && tile.adjacentBombCount > 0
-            ? () => this.clearHighlights()
-            : undefined;
-        const onMouseLeave = tile.status === "revealed" && tile.adjacentBombCount > 0
-            ? () => this.clearHighlights()
-            : undefined;
-        this._tileListeners.set(`${row},${col}`, {
-            click: onClick,
-            contextmenu: onContextMenu,
-            mousedown: onMouseDown,
-            mouseup: onMouseUp,
-            mouseleave: onMouseLeave,
-        });
-        tileElement.addEventListener("click", onClick);
-        tileElement.addEventListener("contextmenu", onContextMenu);
-        if (onMouseDown)
-            tileElement.addEventListener("mousedown", onMouseDown);
-        if (onMouseUp)
-            tileElement.addEventListener("mouseup", onMouseUp);
-        if (onMouseLeave)
-            tileElement.addEventListener("mouseleave", onMouseLeave);
-    }
-    clearTileEventListeners() {
-        for (const [key, listeners] of this._tileListeners.entries()) {
-            const [rowStr, colStr] = key.split(",");
-            const row = parseInt(rowStr, 10);
-            const col = parseInt(colStr, 10);
-            const tileElement = this._boardElement.querySelector(`.tile[data-row="${row}"][data-col="${col}"]`);
-            if (!tileElement)
-                continue;
-            tileElement.removeEventListener("click", listeners.click);
-            tileElement.removeEventListener("contextmenu", listeners.contextmenu);
-            if (listeners.mousedown)
-                tileElement.removeEventListener("mousedown", listeners.mousedown);
-            if (listeners.mouseup)
-                tileElement.removeEventListener("mouseup", listeners.mouseup);
-            if (listeners.mouseleave)
-                tileElement.removeEventListener("mouseleave", listeners.mouseleave);
-        }
-        this._tileListeners.clear();
     }
     handleHighlightNeighbors(e, tile, boardEl, game) {
         if (e.button !== 0)
@@ -186,20 +212,22 @@ export class UIRenderer {
             element.classList.remove("highlighted");
         });
     }
-    checkGameStatus(game) {
-        const status = game.status;
-        if (status !== "playing") {
-            this.stopTimer();
-            setTimeout(() => alert(`You ${status}!`), 100);
-            this.clearTileEventListeners();
-        }
-    }
     setBombIcon(icon) {
         this._bombIcon = icon;
     }
+    endGame(game) {
+        this.stopTimer();
+        this.renderEndBoard(game);
+    }
+    renderEndBoard(game) {
+        for (let row = 0; row < game.board.rows; row++) {
+            for (let col = 0; col < game.board.cols; col++) {
+                this.updateTile(game, row, col);
+            }
+        }
+    }
     reset() {
-        this.clearTileEventListeners();
         this.resetTimer();
-        this._boardElement.innerHTML = "";
+        this._tileElements = [];
     }
 }

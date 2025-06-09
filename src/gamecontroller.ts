@@ -21,43 +21,51 @@ export class GameController {
     }
 
     private bindEvents(): void {
+        this.bindSettingsForm();
+        this.bindThemeSelectors();
+    }
+
+    private bindSettingsForm(): void {
         const settingsForm: HTMLElement | null = document.getElementById("settings-form");
-        if (settingsForm) {
-            settingsForm.addEventListener("submit", (e) => {
-                e.preventDefault();
-                try {
-                    this.startGameFromSettings();
-                } catch (err) {
-                    alert((err as Error).message);
-                }
-            });
-        }
+        if (!settingsForm) return;
 
-        const themeSelect: HTMLElement | null = document.getElementById("theme-mode");
-        const darkModeSelect: HTMLSelectElement | null = document.getElementById('dark-mode') as HTMLSelectElement;
+        settingsForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            try {
+                this.startGameFromSettings();
+            } catch (err) {
+                alert((err as Error).message);
+            }
+        });
+    }
 
-        if (themeSelect && darkModeSelect) {
-            themeSelect.addEventListener("change", (e) => {
-                try {
-                    const selectedMode: ThemeKey = (e.target as HTMLSelectElement).value as ThemeKey;
-                    if (selectedMode in themes) {
-                        this._currentThemeKey = selectedMode;
-                        this.applyThemeConfig();
-                    } else {
-                        throw new Error(`Unknown game mode: ${selectedMode}`);
-                    }
-                } catch (err) {
-                    alert((err as Error).message);
+    private bindThemeSelectors(): void {
+        const themeSelect: HTMLSelectElement | null = document.getElementById("theme-mode") as HTMLSelectElement | null;
+        const darkModeSelect: HTMLSelectElement | null = document.getElementById("dark-mode") as HTMLSelectElement | null;
+
+        if (!themeSelect || !darkModeSelect) return;
+
+        themeSelect.addEventListener("change", (e) => {
+            try {
+                const selectedMode: ThemeKey = (e.target as HTMLSelectElement).value as ThemeKey;
+                if (selectedMode in themes) {
+                    this._currentThemeKey = selectedMode;
+                    this.applyThemeConfig();
+                } else {
+                    throw new Error(`Unknown game mode: ${selectedMode}`);
                 }
-            });
-            darkModeSelect.addEventListener('change', () => {
-                try {
-                    this._themeManager.toggleDarkMode();
-                } catch (err) {
-                    alert((err as Error).message);
-                }
-            });
-        }
+            } catch (err) {
+                alert((err as Error).message);
+            }
+        });
+
+        darkModeSelect.addEventListener("change", () => {
+            try {
+                this._themeManager.toggleDarkMode();
+            } catch (err) {
+                alert((err as Error).message);
+            }
+        });
     }
 
     private startGameFromSettings(): void {
@@ -69,9 +77,45 @@ export class GameController {
 
         this._game = new Game(rows, cols, difficulty);
 
+        this.setGameEventListeners();
         this.applyThemeConfig();
+        this._ui.setBoardEventHandlers(this._game);
         this._ui.renderBoard(this._game);
         this._ui.updateBombCount(this._game);
+    }
+
+    private setGameEventListeners(): void {
+        if (!this._game) throw new Error("Cannot set game event listeners - missing game");
+
+        this._game.addEventListener("tileRevealed", (e: Event) => {
+            const detail: { row: number; col: number; } = (e as CustomEvent).detail as { row: number; col: number; };
+            if (detail && typeof detail.row === "number" && typeof detail.col === "number") {
+                this._ui.updateTile(this._game!, detail.row, detail.col);
+            } else {
+                this._ui.renderBoard(this._game!);
+            }
+            this._ui.updateBombCount(this._game!);
+        });
+
+        this._game.addEventListener("flagToggled", (e: Event) => {
+            const detail: { row: number; col: number; } = (e as CustomEvent).detail as { row: number; col: number; };
+            if (detail && typeof detail.row === "number" && typeof detail.col === "number") {
+                this._ui.updateTile(this._game!, detail.row, detail.col);
+            } else {
+                this._ui.renderBoard(this._game!);
+            }
+            this._ui.updateBombCount(this._game!);
+        });
+
+        this._game.addEventListener("gameWon", () => {
+            this._ui.endGame(this._game!);
+            setTimeout(() => alert(`You won!`), 100);
+        });
+
+        this._game.addEventListener("gameLost", () => {
+            this._ui.endGame(this._game!);
+            setTimeout(() => alert(`You lost!`), 100);
+        });
     }
 
     private applyThemeConfig(): void {

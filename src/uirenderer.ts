@@ -1,9 +1,10 @@
-import { Game, GameStatus } from "./game.js";
-import { Tile } from "./tile.js";
+import { Game } from "./game.js";
+import { Tile, TileStatus } from "./tile.js";
 
 export class UIRenderer {
 
     private _boardElement!: HTMLElement;
+    private _tileElements: HTMLElement[][] = [];
     private _bombCountElement!: HTMLElement;
     private _timerElement!: HTMLElement;
     private _timerIntervalId: number | null = null;
@@ -11,18 +12,78 @@ export class UIRenderer {
     private _elapsedTime: number = 0;
     private _timerRunning: boolean = false;
     private _bombIcon: string = "💣";
-    private _tileListeners: Map<string, {
-        click: EventListener;
-        contextmenu: EventListener;
-        mousedown?: EventListener;
-        mouseup?: EventListener;
-        mouseleave?: EventListener;
-    }> = new Map();
 
     constructor() {
         this.setBoardElement();
         this.setBombCountElement();
         this.setTimerElement();
+    }
+
+    public setBoardEventHandlers(game: Game) {
+        this._boardElement.replaceWith(this._boardElement.cloneNode(true));
+        this._boardElement = document.getElementById("board")!;
+
+        this._boardElement.addEventListener("click", (e: MouseEvent) => {
+            const target: HTMLElement = e.target as HTMLElement;
+            if (!target.classList.contains("tile")) return;
+            const row: number = Number(target.dataset.row);
+            const col: number = Number(target.dataset.col);
+            if (isNaN(row) || isNaN(col)) return;
+            if (game.status !== "playing") return;
+            if (!this._timerRunning) this.startTimer();
+            try {
+                game.reveal(row, col);
+            } catch (err) {
+                alert((err as Error).message);
+            }
+        });
+
+        this._boardElement.addEventListener("contextmenu", (e: MouseEvent) => {
+            const target: HTMLElement = e.target as HTMLElement;
+            if (!target.classList.contains("tile")) return;
+            e.preventDefault();
+            const row: number = Number(target.dataset.row);
+            const col: number = Number(target.dataset.col);
+            if (isNaN(row) || isNaN(col)) return;
+            if (game.status !== "playing") return;
+            try {
+                game.toggleFlag(row, col);
+            } catch (err) {
+                alert((err as Error).message);
+            }
+        });
+
+        this._boardElement.addEventListener("mousedown", (e: MouseEvent) => {
+            const target: HTMLElement = e.target as HTMLElement;
+            if (!target.classList.contains("tile")) return;
+            const row: number = Number(target.dataset.row);
+            const col: number = Number(target.dataset.col);
+            if (isNaN(row) || isNaN(col)) return;
+            const tile = game.getTile(row, col);
+            if (
+                tile.status === "revealed" &&
+                tile.adjacentBombCount > 0 &&
+                e.button === 0
+            ) {
+                this.handleHighlightNeighbors(e, tile, this._boardElement, game);
+            }
+        });
+
+        this._boardElement.addEventListener("mouseup", (e: MouseEvent) => {
+            const target: HTMLElement = e.target as HTMLElement;
+            if (!target.classList.contains("tile")) return;
+            const row: number = Number(target.dataset.row);
+            const col: number = Number(target.dataset.col);
+            if (isNaN(row) || isNaN(col)) return;
+            const tile: Tile = game.getTile(row, col);
+            if (tile.status === "revealed" && tile.adjacentBombCount > 0) {
+                this.clearHighlights();
+            }
+        });
+
+        this._boardElement.addEventListener("mouseleave", (e: MouseEvent) => {
+            this.clearHighlights();
+        });
     }
 
     private setTimerElement(): void {
@@ -63,7 +124,7 @@ export class UIRenderer {
         }, 1000);
     }
 
-    private stopTimer(): void {
+    public stopTimer(): void {
         if (this._timerIntervalId !== null) {
             window.clearInterval(this._timerIntervalId);
             this._timerIntervalId = null;
@@ -78,32 +139,41 @@ export class UIRenderer {
     }
 
     public renderBoard(game: Game): void {
-        this.clearTileEventListeners();
         this.prepareBoardElement(this._boardElement, game);
-        this.updateBombCount(game);
+        this._tileElements = [];
 
-        for (let row = 0; row < game.rows; row++) {
-            for (let col = 0; col < game.cols; col++) {
+        for (let row = 0; row < game.board.rows; row++) {
+            const rowElements: HTMLElement[] = [];
+            for (let col = 0; col < game.board.cols; col++) {
                 const tile: Tile = game.getTile(row, col);
                 const tileElement: HTMLElement = this.createTileElement(tile, row, col);
-                this.attachTileEventListeners(tileElement, tile, row, col, this._boardElement, game);
                 this._boardElement.appendChild(tileElement);
+                rowElements.push(tileElement);
             }
+            this._tileElements.push(rowElements);
+        }
+    }
+
+    public updateTile(game: Game, row: number, col: number): void {
+        const tile: Tile = game.getTile(row, col);
+        const tileElement: HTMLElement = this._tileElements?.[row]?.[col];
+        if (tileElement) {
+            this.applyTileState(tileElement, tile);
+        }
+    }
+
+    private applyTileState(tileElement: HTMLElement, tile: Tile): void {
+        const prevState: string | undefined = tileElement.dataset.state;
+        const newState: TileStatus = tile.status;
+
+        if (prevState === newState && tileElement.dataset.value === tile.adjacentBombCount?.toString()) {
+            return;
         }
 
-        this.checkGameStatus(game);
-    }
-
-    private prepareBoardElement(boardElement: HTMLElement, game: Game): void {
-        boardElement.innerHTML = "";
-        boardElement.style.gridTemplateColumns = `repeat(${game.cols}, 30px)`;
-    }
-
-    private createTileElement(tile: Tile, row: number, col: number): HTMLElement {
-        const tileElement: HTMLElement = document.createElement("div");
+        tileElement.dataset.state = newState;
         tileElement.className = "tile";
-        tileElement.dataset.row = row.toString();
-        tileElement.dataset.col = col.toString();
+        tileElement.textContent = "";
+        tileElement.removeAttribute("data-value");
 
         switch (tile.status) {
             case "revealed":
@@ -121,88 +191,20 @@ export class UIRenderer {
                 tileElement.textContent = "❌";
                 break;
         }
+    }
 
+    private prepareBoardElement(boardElement: HTMLElement, game: Game): void {
+        boardElement.innerHTML = "";
+        boardElement.style.gridTemplateColumns = `repeat(${game.cols}, 30px)`;
+    }
+
+    private createTileElement(tile: Tile, row: number, col: number): HTMLElement {
+        const tileElement: HTMLElement = document.createElement("div");
+        tileElement.className = "tile";
+        tileElement.dataset.row = row.toString();
+        tileElement.dataset.col = col.toString();
+        this.applyTileState(tileElement, tile);
         return tileElement;
-    }
-
-    private attachTileEventListeners(tileElement: HTMLElement, tile: Tile, row: number, col: number, boardEl: HTMLElement, game: Game): void {
-
-        const onClick: EventListener = (e: Event): void => {
-            try {
-                if (!this._timerRunning && game.status === "playing") {
-                    this.startTimer();
-                }
-                game.reveal(row, col);
-                this.renderBoard(game);
-            } catch (err) {
-                alert((err as Error).message);
-            }
-        };
-
-        const onContextMenu: EventListener = (e: Event): void => {
-            e.preventDefault();
-            try {
-                game.toggleFlag(row, col);
-                this.renderBoard(game);
-            } catch (err) {
-                alert((err as Error).message);
-            }
-        };
-
-        const onMouseDown: EventListener | undefined =
-            tile.status === "revealed" && tile.adjacentBombCount > 0
-                ? (e: Event): void => this.handleHighlightNeighbors(e as MouseEvent, tile, boardEl, game)
-                : undefined;
-
-        const onMouseUp: EventListener | undefined =
-            tile.status === "revealed" && tile.adjacentBombCount > 0
-                ? (): void => this.clearHighlights()
-                : undefined;
-
-        const onMouseLeave: EventListener | undefined =
-            tile.status === "revealed" && tile.adjacentBombCount > 0
-                ? (): void => this.clearHighlights()
-                : undefined;
-
-        this._tileListeners.set(`${row},${col}`, {
-            click: onClick,
-            contextmenu: onContextMenu,
-            mousedown: onMouseDown,
-            mouseup: onMouseUp,
-            mouseleave: onMouseLeave,
-        });
-
-        tileElement.addEventListener("click", onClick);
-        tileElement.addEventListener("contextmenu", onContextMenu);
-
-        if (onMouseDown) tileElement.addEventListener("mousedown", onMouseDown);
-        if (onMouseUp) tileElement.addEventListener("mouseup", onMouseUp);
-        if (onMouseLeave) tileElement.addEventListener("mouseleave", onMouseLeave);
-    }
-
-    private clearTileEventListeners(): void {
-        for (const [key, listeners] of this._tileListeners.entries()) {
-            const [rowStr, colStr]: string[] = key.split(",");
-            const row: number = parseInt(rowStr, 10);
-            const col: number = parseInt(colStr, 10);
-
-            const tileElement: HTMLElement | null = this._boardElement.querySelector(
-                `.tile[data-row="${row}"][data-col="${col}"]`
-            );
-
-            if (!tileElement) continue;
-            tileElement.removeEventListener("click", listeners.click);
-            tileElement.removeEventListener("contextmenu", listeners.contextmenu);
-
-            if (listeners.mousedown)
-                tileElement.removeEventListener("mousedown", listeners.mousedown);
-            if (listeners.mouseup)
-                tileElement.removeEventListener("mouseup", listeners.mouseup);
-            if (listeners.mouseleave)
-                tileElement.removeEventListener("mouseleave", listeners.mouseleave);
-        }
-
-        this._tileListeners.clear();
     }
 
     private handleHighlightNeighbors(e: MouseEvent, tile: Tile, boardEl: HTMLElement, game: Game): void {
@@ -231,22 +233,25 @@ export class UIRenderer {
         });
     }
 
-    private checkGameStatus(game: Game): void {
-        const status: GameStatus = game.status;
-        if (status !== "playing") {
-            this.stopTimer();
-            setTimeout(() => alert(`You ${status}!`), 100);
-            this.clearTileEventListeners();
-        }
-    }
-
     public setBombIcon(icon: string) {
         this._bombIcon = icon;
     }
 
+    public endGame(game: Game): void {
+        this.stopTimer();
+        this.renderEndBoard(game);
+    }
+
+    private renderEndBoard(game: Game): void {
+        for (let row = 0; row < game.board.rows; row++) {
+            for (let col = 0; col < game.board.cols; col++) {
+                this.updateTile(game, row, col);
+            }
+        }
+    }
+
     public reset(): void {
-        this.clearTileEventListeners();
         this.resetTimer();
-        this._boardElement.innerHTML = "";
+        this._tileElements = [];
     }
 }

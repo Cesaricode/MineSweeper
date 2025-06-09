@@ -6,7 +6,7 @@ import { directions } from "./util.js";
 
 export type GameStatus = "playing" | "won" | "lost";
 
-export class Game {
+export class Game extends EventTarget {
     readonly rows: number;
     readonly cols: number;
     readonly difficulty: Difficulty;
@@ -16,7 +16,8 @@ export class Game {
     private _tilesToReveal: number;
 
     constructor(rows: number, cols: number, difficulty: Difficulty) {
-        const isValid = (n: number) => n >= 5 && n <= 50;
+        super();
+        const isValid = (n: number) => n >= 5 && n <= 100;
         if (!isValid(rows)) throw new Error("Invalid row count");
         if (!isValid(cols)) throw new Error("Invalid column count");
 
@@ -77,7 +78,7 @@ export class Game {
     private revealTile(tile: Tile): void {
         this.assertHidden(tile);
         tile.reveal();
-        this.handleSuccessfulReveal();
+        this.handleSuccessfulReveal(tile.row, tile.col);
     }
 
     private ensureBombsDeployed(row: number, col: number): void {
@@ -122,18 +123,22 @@ export class Game {
             return;
         }
         tile.reveal();
-        this.handleSuccessfulReveal();
+        this.handleSuccessfulReveal(tile.row, tile.col);
     }
 
     private triggerBomb(): void {
         this._status = "lost";
         this._board.revealBombs();
         this._board.revealIncorrectFlags();
+        this.dispatchEvent(new CustomEvent("gameLost"));
     }
 
     public toggleFlag(row: number, col: number): void {
         this.assertPlaying();
         this._board.toggleFlag(this._board.getTile(row, col));
+        this.dispatchEvent(new CustomEvent<{ row: number; col: number; }>("flagToggled", {
+            detail: { row, col }
+        }));
     }
 
     public getTile(row: number, col: number): Tile {
@@ -164,10 +169,14 @@ export class Game {
         return this._board.getNeighbors(tile);
     }
 
-    private handleSuccessfulReveal(): void {
+    private handleSuccessfulReveal(row: number, col: number): void {
         this._tilesToReveal--;
+        this.dispatchEvent(new CustomEvent<{ row: number; col: number; }>("tileRevealed", {
+            detail: { row, col }
+        }));
         if (this._tilesToReveal === 0) {
             this._status = "won";
+            this.dispatchEvent(new CustomEvent("gameWon"));
         }
     }
 }
