@@ -5,7 +5,6 @@ export const themes = {
         colors: {
             primary: "#9e9e9e",
             flagged: "#cfd8dc",
-            bomb: "#d32f2f",
         },
         icon: "💣",
     },
@@ -15,7 +14,6 @@ export const themes = {
         colors: {
             primary: "#66bb6a",
             flagged: "#aed581",
-            bomb: "#388e3c",
         },
         icon: "🐢",
     },
@@ -25,7 +23,6 @@ export const themes = {
         colors: {
             primary: "#ffb74d",
             flagged: "#ffe082",
-            bomb: "#6d4c41",
         },
         icon: "🍺",
     },
@@ -35,7 +32,6 @@ export const themes = {
         colors: {
             primary: "#e91e63",
             flagged: "#f06292",
-            bomb: "#ad1457",
         },
         icon: "❤️",
     },
@@ -45,7 +41,6 @@ export const themes = {
         colors: {
             primary: "#d7a86e",
             flagged: "#ffe0b2",
-            bomb: "#5d4037",
         },
         icon: "🍪",
     },
@@ -55,7 +50,6 @@ export const themes = {
         colors: {
             primary: "#6a1b9a",
             flagged: "#f8bbd0",
-            bomb: "#4a148c",
         },
         icon: "🐱",
     },
@@ -65,7 +59,6 @@ export const themes = {
         colors: {
             primary: "#00e676",
             flagged: "#69f0ae",
-            bomb: "#1b5e20",
         },
         icon: "👽",
     },
@@ -75,7 +68,6 @@ export const themes = {
         colors: {
             primary: "#76ff03",
             flagged: "#ccff90",
-            bomb: "#33691e",
         },
         icon: "🐸",
     },
@@ -85,7 +77,6 @@ export const themes = {
         colors: {
             primary: "#40c4ff",
             flagged: "#81d4fa",
-            bomb: "#0277bd",
         },
         icon: "💎",
     },
@@ -95,7 +86,6 @@ export const themes = {
         colors: {
             primary: "#ce93d8",
             flagged: "#f8bbd0",
-            bomb: "#ad1457",
         },
         icon: "🧁",
     },
@@ -105,7 +95,6 @@ export const themes = {
         colors: {
             primary: "#80deea",
             flagged: "#b2ebf2",
-            bomb: "#006064",
         },
         icon: "🧊",
     },
@@ -115,7 +104,6 @@ export const themes = {
         colors: {
             primary: "#ef5350",
             flagged: "#ff8a65",
-            bomb: "#bf360c",
         },
         icon: "🌋",
     },
@@ -125,7 +113,6 @@ export const themes = {
         colors: {
             primary: "#ff4081",
             flagged: "#f48fb1",
-            bomb: "#880e4f",
         },
         icon: "🕹️",
     },
@@ -135,7 +122,6 @@ export const themes = {
         colors: {
             primary: "#f44336",
             flagged: "#ff8a65",
-            bomb: "#d50000",
         },
         icon: "🐲",
     },
@@ -145,7 +131,6 @@ export const themes = {
         colors: {
             primary: "#ab47bc",
             flagged: "#e1bee7",
-            bomb: "#4a148c",
         },
         icon: "🧪",
     },
@@ -155,7 +140,6 @@ export const themes = {
         colors: {
             primary: "#bdbdbd",
             flagged: "#eeeeee",
-            bomb: "#616161",
         },
         icon: "👻",
     },
@@ -165,7 +149,6 @@ export const themes = {
         colors: {
             primary: "#ffe082",
             flagged: "#fff9c4",
-            bomb: "#8d6e63",
         },
         icon: "📜",
     },
@@ -175,7 +158,6 @@ export const themes = {
         colors: {
             primary: "#d2691e",
             flagged: "#ffcc80",
-            bomb: "#5d4037",
         },
         icon: "🥃",
     },
@@ -185,7 +167,6 @@ export const themes = {
         colors: {
             primary: "#81d4fa",
             flagged: "#ffd54f",
-            bomb: "#4caf50",
         },
         icon: "🧟",
     },

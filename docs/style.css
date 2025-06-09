@@ -158,9 +158,7 @@ h1 {
     display: block;
     box-sizing: border-box;
     padding: 0;
-    /* important */
     text-align: center;
-    /* center visually if possible */
 }
 
 #board {
