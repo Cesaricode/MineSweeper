@@ -151,28 +151,27 @@ h1 {
     background-color: var(--color-primary);
 }
 
-#board {
-    display: grid;
-    grid-template-columns: repeat(20, 30px);
-    gap: 0px;
-    justify-content: center;
-    margin: 0 auto;
-    font-size: 0;
-    min-width: fit-content;
-    width: fit-content;
-    height: fit-content;
-    border: solid 2px var(--color-tile-border);
-}
-
 #board-container {
     width: 100%;
     overflow-x: auto;
     overflow-y: auto;
-    padding: 0 16px;
-    display: flex;
-    justify-content: center;
+    display: block;
     box-sizing: border-box;
-    scroll-padding: 16px;
+    padding: 0;
+    /* important */
+    text-align: center;
+    /* center visually if possible */
+}
+
+#board {
+    display: inline-grid;
+    grid-template-columns: repeat(20, 30px);
+    gap: 0;
+    font-size: 0;
+    width: fit-content;
+    min-width: 0;
+    max-width: 100%;
+    border: solid 2px var(--color-tile-border);
 }
 
 .tile {
