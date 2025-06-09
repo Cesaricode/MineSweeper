@@ -91,6 +91,12 @@ export class UIRenderer {
         });
     }
 
+    private clearBoardEventHandlers(): void {
+        const newBoard: HTMLElement = this._boardElement.cloneNode(true) as HTMLElement;
+        this._boardElement.parentNode?.replaceChild(newBoard, this._boardElement);
+        this._boardElement = newBoard;
+    }
+
     private setTimerElement(): void {
         const element: HTMLElement | null = document.getElementById("time");
         if (!element) throw new Error("Timer element not found.");
@@ -244,6 +250,7 @@ export class UIRenderer {
 
     public endGame(game: Game): void {
         this.stopTimer();
+        this.clearBoardEventHandlers();
         this.renderEndBoard(game);
     }
 

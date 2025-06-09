@@ -83,6 +83,12 @@ export class UIRenderer {
             this.clearHighlights();
         });
     }
+    clearBoardEventHandlers() {
+        var _a;
+        const newBoard = this._boardElement.cloneNode(true);
+        (_a = this._boardElement.parentNode) === null || _a === void 0 ? void 0 : _a.replaceChild(newBoard, this._boardElement);
+        this._boardElement = newBoard;
+    }
     setTimerElement() {
         const element = document.getElementById("time");
         if (!element)
@@ -218,6 +224,7 @@ export class UIRenderer {
     }
     endGame(game) {
         this.stopTimer();
+        this.clearBoardEventHandlers();
         this.renderEndBoard(game);
     }
     renderEndBoard(game) {
