@@ -365,6 +365,7 @@ h1 {
     right: 0.5rem;
     width: 36px;
     height: 36px;
+    padding-bottom: 2px;
     background-color: var(--color-highlight-border);
     color: var(--color-background);
     border: none;
