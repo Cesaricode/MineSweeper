@@ -1,11 +1,19 @@
 import { Board } from "./board.js";
-import { getBombCount } from "./difficulty.js";
+import { difficultyBombRange, getBombCount } from "./difficulty.js";
 import { isInBounds } from "./util.js";
 import { directions } from "./util.js";
 export class Game {
     constructor(rows, cols, difficulty) {
         this._isFirstMove = true;
         this._status = "playing";
+        const isValid = (n) => n >= 5 && n <= 50;
+        if (!isValid(rows))
+            throw new Error("Invalid row count");
+        if (!isValid(cols))
+            throw new Error("Invalid column count");
+        if (!(difficulty in difficultyBombRange)) {
+            throw new Error(`Invalid difficulty: ${difficulty}`);
+        }
         this.rows = rows;
         this.cols = cols;
         this.difficulty = difficulty;

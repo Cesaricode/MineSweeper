@@ -1,11 +1,11 @@
 :root {
     --color-primary: #9e9e9e;
-    --color-background: #121212;
-    --color-tile-bg: #1e1e1e;
     --color-flagged: #ffb300;
     --color-bomb: #b00020;
-    --color-text: #eee;
 
+    --color-background: #121212;
+    --color-tile-bg: #1e1e1e;
+    --color-text: #eee;
     --color-input-bg: #2a2a2a;
     --color-input-text: #eee;
     --color-input-border: #444;
@@ -246,17 +246,17 @@ h1 {
     transform: translate(16px, -50%);
 }
 
-#mode-switcher {
+#theme-switcher {
     margin-bottom: 16px;
     text-align: center;
 }
 
-#mode-switcher label {
+#theme-switcher label {
     color: var(--color-label);
     font-size: 14px;
 }
 
-#mode-switcher select {
+#theme-switcher select {
     margin-left: 8px;
     padding: 6px 8px;
     background-color: var(--color-input-bg);
@@ -268,7 +268,7 @@ h1 {
     transition: border-color 0.2s ease;
 }
 
-#mode-switcher select:focus {
+#theme-switcher select:focus {
     border-color: var(--color-primary);
 }
 

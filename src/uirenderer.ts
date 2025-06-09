@@ -1,9 +1,8 @@
 import { Game, GameStatus } from "./game.js";
 import { Tile } from "./tile.js";
 
-export class GameUI {
+export class UIRenderer {
 
-    private _game: Game;
     private _boardElement!: HTMLElement;
     private _bombCountElement!: HTMLElement;
     private _timerElement!: HTMLElement;
@@ -20,13 +19,10 @@ export class GameUI {
         mouseleave?: EventListener;
     }> = new Map();
 
-
-    constructor(boardElementId: string, rows: number, cols: number, difficulty: string) {
-        this._game = new Game(rows, cols, difficulty);
-        this.setBoardElement(boardElementId);
+    constructor() {
+        this.setBoardElement();
         this.setBombCountElement();
         this.setTimerElement();
-        this.updateBombCount();
     }
 
     private setTimerElement(): void {
@@ -35,8 +31,8 @@ export class GameUI {
         this._timerElement = element;
     }
 
-    private setBoardElement(boardElementId: string,): void {
-        const element: HTMLElement | null = document.getElementById(boardElementId);
+    private setBoardElement(): void {
+        const element: HTMLElement | null = document.getElementById("board");
         if (!element) throw new Error("Board element not found.");
         this._boardElement = element;
     }
@@ -47,8 +43,8 @@ export class GameUI {
         this._bombCountElement = bombCounter;
     }
 
-    private updateBombCount(): void {
-        this._bombCountElement.textContent = (this._game.board.bombCount - this._game.board.flagCount).toString();
+    public updateBombCount(game: Game): void {
+        this._bombCountElement.textContent = (game.board.bombCount - game.board.flagCount).toString();
     }
 
     private updateTimerElement(): void {
@@ -81,26 +77,26 @@ export class GameUI {
         this.updateTimerElement();
     }
 
-    public renderBoard(): void {
+    public renderBoard(game: Game): void {
         this.clearTileEventListeners();
-        this.prepareBoardElement(this._boardElement);
-        this.updateBombCount();
+        this.prepareBoardElement(this._boardElement, game);
+        this.updateBombCount(game);
 
-        for (let row = 0; row < this._game.rows; row++) {
-            for (let col = 0; col < this._game.cols; col++) {
-                const tile: Tile = this._game.getTile(row, col);
+        for (let row = 0; row < game.rows; row++) {
+            for (let col = 0; col < game.cols; col++) {
+                const tile: Tile = game.getTile(row, col);
                 const tileElement: HTMLElement = this.createTileElement(tile, row, col);
-                this.attachTileEventListeners(tileElement, tile, row, col, this._boardElement);
+                this.attachTileEventListeners(tileElement, tile, row, col, this._boardElement, game);
                 this._boardElement.appendChild(tileElement);
             }
         }
 
-        this.checkGameStatus();
+        this.checkGameStatus(game);
     }
 
-    private prepareBoardElement(boardElement: HTMLElement): void {
+    private prepareBoardElement(boardElement: HTMLElement, game: Game): void {
         boardElement.innerHTML = "";
-        boardElement.style.gridTemplateColumns = `repeat(${this._game.cols}, 30px)`;
+        boardElement.style.gridTemplateColumns = `repeat(${game.cols}, 30px)`;
     }
 
     private createTileElement(tile: Tile, row: number, col: number): HTMLElement {
@@ -129,15 +125,15 @@ export class GameUI {
         return tileElement;
     }
 
-    private attachTileEventListeners(tileElement: HTMLElement, tile: Tile, row: number, col: number, boardEl: HTMLElement): void {
+    private attachTileEventListeners(tileElement: HTMLElement, tile: Tile, row: number, col: number, boardEl: HTMLElement, game: Game): void {
 
         const onClick: EventListener = (e: Event): void => {
             try {
-                if (!this._timerRunning && this._game.status === "playing") {
+                if (!this._timerRunning && game.status === "playing") {
                     this.startTimer();
                 }
-                this._game.reveal(row, col);
-                this.renderBoard();
+                game.reveal(row, col);
+                this.renderBoard(game);
             } catch (err) {
                 alert((err as Error).message);
             }
@@ -146,8 +142,8 @@ export class GameUI {
         const onContextMenu: EventListener = (e: Event): void => {
             e.preventDefault();
             try {
-                this._game.toggleFlag(row, col);
-                this.renderBoard();
+                game.toggleFlag(row, col);
+                this.renderBoard(game);
             } catch (err) {
                 alert((err as Error).message);
             }
@@ -155,7 +151,7 @@ export class GameUI {
 
         const onMouseDown: EventListener | undefined =
             tile.status === "revealed" && tile.adjacentBombCount > 0
-                ? (e: Event): void => this.handleHighlightNeighbors(e as MouseEvent, tile, boardEl)
+                ? (e: Event): void => this.handleHighlightNeighbors(e as MouseEvent, tile, boardEl, game)
                 : undefined;
 
         const onMouseUp: EventListener | undefined =
@@ -209,10 +205,10 @@ export class GameUI {
         this._tileListeners.clear();
     }
 
-    private handleHighlightNeighbors(e: MouseEvent, tile: Tile, boardEl: HTMLElement): void {
+    private handleHighlightNeighbors(e: MouseEvent, tile: Tile, boardEl: HTMLElement, game: Game): void {
         if (e.button !== 0) return;
 
-        const neighbors: Tile[] = this._game.getNeighbors(tile);
+        const neighbors: Tile[] = game.getNeighbors(tile);
 
         for (const neighbor of neighbors) {
             if (neighbor.status === "hidden") {
@@ -235,8 +231,8 @@ export class GameUI {
         });
     }
 
-    private checkGameStatus(): void {
-        const status: GameStatus = this._game.status;
+    private checkGameStatus(game: Game): void {
+        const status: GameStatus = game.status;
         if (status !== "playing") {
             this.stopTimer();
             setTimeout(() => alert(`You ${status}!`), 100);
@@ -248,13 +244,9 @@ export class GameUI {
         this._bombIcon = icon;
     }
 
-    public destroy(): void {
+    public reset(): void {
         this.clearTileEventListeners();
         this.resetTimer();
         this._boardElement.innerHTML = "";
-    }
-
-    public getGame(): Game {
-        return this._game;
     }
 }

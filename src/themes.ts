@@ -183,8 +183,8 @@ export const themes: Record<string, ThemeConfig> = {
         },
         icon: "📜",
     },
-    whiskeysweeper: {
-        title: "WhiskeySweeper",
+    whiskysweeper: {
+        title: "WhiskySweeper",
         bombName: "Glasses",
         colors: {
             primary: "#d2691e",

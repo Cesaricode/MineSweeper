@@ -169,8 +169,8 @@ export const themes = {
         },
         icon: "📜",
     },
-    whiskeysweeper: {
-        title: "WhiskeySweeper",
+    whiskysweeper: {
+        title: "WhiskySweeper",
         bombName: "Glasses",
         colors: {
             primary: "#d2691e",

@@ -1,11 +1,19 @@
-import { GameUI } from "./ui.js";
-import { themes, ThemeKey, ThemeConfig } from "./themes.js";
+import { themes, ThemeKey } from "./themes.js";
+import { Game } from "./game.js";
+import { ThemeManager } from "./thememanager.js";
+import { UIRenderer } from "./uirenderer.js";
 
 export class GameController {
-    private _currentGameUI: GameUI | null = null;
+
+    private _game: Game | null = null;
+    private _ui: UIRenderer;
+    private _themeManager: ThemeManager;
     private _currentThemeKey: ThemeKey = "minesweeper";
 
-    constructor(private rootElementId: string) { }
+    constructor() {
+        this._themeManager = new ThemeManager();
+        this._ui = new UIRenderer();
+    }
 
     init(): void {
         this.bindEvents();
@@ -17,67 +25,60 @@ export class GameController {
         if (settingsForm) {
             settingsForm.addEventListener("submit", (e) => {
                 e.preventDefault();
-                this.startGameFromSettings();
+                try {
+                    this.startGameFromSettings();
+                } catch (err) {
+                    alert((err as Error).message);
+                }
             });
         }
 
-        const modeSelect: HTMLElement | null = document.getElementById("game-mode");
-        const colorModeSelect: HTMLSelectElement | null = document.getElementById('theme-mode') as HTMLSelectElement;
+        const themeSelect: HTMLElement | null = document.getElementById("theme-mode");
+        const darkModeSelect: HTMLSelectElement | null = document.getElementById('dark-mode') as HTMLSelectElement;
 
-        if (modeSelect && colorModeSelect) {
-            modeSelect.addEventListener("change", (e) => {
-                const selectedMode: ThemeKey = (e.target as HTMLSelectElement).value as ThemeKey;
-                if (selectedMode in themes) {
-                    this._currentThemeKey = selectedMode;
-                    this.applyThemeConfig();
-                } else {
-                    console.warn(`Unknown game mode: ${selectedMode}`);
+        if (themeSelect && darkModeSelect) {
+            themeSelect.addEventListener("change", (e) => {
+                try {
+                    const selectedMode: ThemeKey = (e.target as HTMLSelectElement).value as ThemeKey;
+                    if (selectedMode in themes) {
+                        this._currentThemeKey = selectedMode;
+                        this.applyThemeConfig();
+                    } else {
+                        throw new Error(`Unknown game mode: ${selectedMode}`);
+                    }
+                } catch (err) {
+                    alert((err as Error).message);
                 }
             });
-            colorModeSelect.addEventListener('change', () => {
-                document.documentElement.setAttribute('data-theme', colorModeSelect.value);
+            darkModeSelect.addEventListener('change', () => {
+                try {
+                    this._themeManager.toggleDarkMode();
+                } catch (err) {
+                    alert((err as Error).message);
+                }
             });
         }
     }
 
     private startGameFromSettings(): void {
-        if (this._currentGameUI) {
-            this._currentGameUI.destroy();
-        }
+        this._ui.reset();
 
-        const rows = Number((document.getElementById("rows") as HTMLInputElement).value);
-        const cols = Number((document.getElementById("cols") as HTMLInputElement).value);
+        const rows: number = Number((document.getElementById("rows") as HTMLInputElement).value);
+        const cols: number = Number((document.getElementById("cols") as HTMLInputElement).value);
         const difficulty: string = (document.getElementById("difficulty") as HTMLSelectElement).value;
 
-        this._currentGameUI = new GameUI(this.rootElementId, rows, cols, difficulty);
-        this._currentGameUI.renderBoard();
+        this._game = new Game(rows, cols, difficulty);
+
         this.applyThemeConfig();
+        this._ui.renderBoard(this._game);
+        this._ui.updateBombCount(this._game);
     }
 
     private applyThemeConfig(): void {
-        const gameTitleElement: HTMLElement | null = document.getElementById("game-title");
-        const bombCounterElement: HTMLElement | null = document.getElementById("bomb-counter");
-
-        if (!this._currentGameUI || !gameTitleElement || !bombCounterElement) {
-            return;
-        }
-
-        const currentTheme: ThemeConfig = themes[this._currentThemeKey];
-
-        document.title = currentTheme.title;
-        gameTitleElement.textContent = currentTheme.title;
-        bombCounterElement.innerHTML = `${currentTheme.bombName}: <span id="bomb-count">${this._currentGameUI.getGame().board.bombCount}</span>`;
-
-        this._currentGameUI.setBombIcon(currentTheme.icon);
-        this._currentGameUI.setBombCountElement();
-
-        this.applyColorConfig(currentTheme.colors);
-    }
-
-    private applyColorConfig(colors: Record<string, string>): void {
-        const root: HTMLElement = document.documentElement;
-        Object.entries(colors).forEach(([key, value]) => {
-            root.style.setProperty(`--color-${key}`, value);
-        });
+        if (!this._game) return;
+        this._themeManager.setTheme(this._currentThemeKey);
+        this._themeManager.applyTheme(this._game.board.bombCount);
+        this._ui.setBombIcon(this._themeManager.theme.icon);
+        this._ui.setBombCountElement();
     }
 }

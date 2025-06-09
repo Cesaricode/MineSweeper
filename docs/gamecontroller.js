@@ -1,10 +1,13 @@
-import { GameUI } from "./ui.js";
 import { themes } from "./themes.js";
+import { Game } from "./game.js";
+import { ThemeManager } from "./thememanager.js";
+import { UIRenderer } from "./uirenderer.js";
 export class GameController {
-    constructor(rootElementId) {
-        this.rootElementId = rootElementId;
-        this._currentGameUI = null;
+    constructor() {
+        this._game = null;
         this._currentThemeKey = "minesweeper";
+        this._themeManager = new ThemeManager();
+        this._ui = new UIRenderer();
     }
     init() {
         this.bindEvents();
@@ -15,56 +18,58 @@ export class GameController {
         if (settingsForm) {
             settingsForm.addEventListener("submit", (e) => {
                 e.preventDefault();
-                this.startGameFromSettings();
+                try {
+                    this.startGameFromSettings();
+                }
+                catch (err) {
+                    alert(err.message);
+                }
             });
         }
-        const modeSelect = document.getElementById("game-mode");
-        const colorModeSelect = document.getElementById('theme-mode');
-        if (modeSelect && colorModeSelect) {
-            modeSelect.addEventListener("change", (e) => {
-                const selectedMode = e.target.value;
-                if (selectedMode in themes) {
-                    this._currentThemeKey = selectedMode;
-                    this.applyThemeConfig();
+        const themeSelect = document.getElementById("theme-mode");
+        const darkModeSelect = document.getElementById('dark-mode');
+        if (themeSelect && darkModeSelect) {
+            themeSelect.addEventListener("change", (e) => {
+                try {
+                    const selectedMode = e.target.value;
+                    if (selectedMode in themes) {
+                        this._currentThemeKey = selectedMode;
+                        this.applyThemeConfig();
+                    }
+                    else {
+                        throw new Error(`Unknown game mode: ${selectedMode}`);
+                    }
                 }
-                else {
-                    console.warn(`Unknown game mode: ${selectedMode}`);
+                catch (err) {
+                    alert(err.message);
                 }
             });
-            colorModeSelect.addEventListener('change', () => {
-                document.documentElement.setAttribute('data-theme', colorModeSelect.value);
+            darkModeSelect.addEventListener('change', () => {
+                try {
+                    this._themeManager.toggleDarkMode();
+                }
+                catch (err) {
+                    alert(err.message);
+                }
             });
         }
     }
     startGameFromSettings() {
-        if (this._currentGameUI) {
-            this._currentGameUI.destroy();
-        }
+        this._ui.reset();
         const rows = Number(document.getElementById("rows").value);
         const cols = Number(document.getElementById("cols").value);
         const difficulty = document.getElementById("difficulty").value;
-        this._currentGameUI = new GameUI(this.rootElementId, rows, cols, difficulty);
-        this._currentGameUI.renderBoard();
+        this._game = new Game(rows, cols, difficulty);
         this.applyThemeConfig();
+        this._ui.renderBoard(this._game);
+        this._ui.updateBombCount(this._game);
     }
     applyThemeConfig() {
-        const gameTitleElement = document.getElementById("game-title");
-        const bombCounterElement = document.getElementById("bomb-counter");
-        if (!this._currentGameUI || !gameTitleElement || !bombCounterElement) {
+        if (!this._game)
             return;
-        }
-        const currentTheme = themes[this._currentThemeKey];
-        document.title = currentTheme.title;
-        gameTitleElement.textContent = currentTheme.title;
-        bombCounterElement.innerHTML = `${currentTheme.bombName}: <span id="bomb-count">${this._currentGameUI.getGame().board.bombCount}</span>`;
-        this._currentGameUI.setBombIcon(currentTheme.icon);
-        this._currentGameUI.setBombCountElement();
-        this.applyColorConfig(currentTheme.colors);
-    }
-    applyColorConfig(colors) {
-        const root = document.documentElement;
-        Object.entries(colors).forEach(([key, value]) => {
-            root.style.setProperty(`--color-${key}`, value);
-        });
+        this._themeManager.setTheme(this._currentThemeKey);
+        this._themeManager.applyTheme(this._game.board.bombCount);
+        this._ui.setBombIcon(this._themeManager.theme.icon);
+        this._ui.setBombCountElement();
     }
 }
