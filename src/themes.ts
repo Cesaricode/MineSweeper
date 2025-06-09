@@ -61,8 +61,8 @@ export const themes: Record<string, ThemeConfig> = {
         title: "CatSweeper",
         bombName: "Cats",
         colors: {
-            primary: "#6a1b9a",
-            flagged: "#f8bbd0",
+            primary: "#a9746e",
+            flagged: "#ffd9d0",
         },
         icon: "🐱",
     },

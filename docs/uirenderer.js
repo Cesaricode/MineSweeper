@@ -9,6 +9,7 @@ export class UIRenderer {
         this.setBoardElement();
         this.setBombCountElement();
         this.setTimerElement();
+        this.setGameOverScreenElements();
     }
     setBoardEventHandlers(game) {
         this._boardElement.replaceWith(this._boardElement.cloneNode(true));
@@ -225,6 +226,34 @@ export class UIRenderer {
                 this.updateTile(game, row, col);
             }
         }
+    }
+    setGameOverScreenElements() {
+        const screen = document.getElementById("game-over-screen");
+        const messageElem = document.getElementById("game-over-message");
+        const restartButton = document.getElementById("restart-button");
+        const closeButton = document.getElementById("close-game-over");
+        if (!screen || !messageElem || !restartButton || !closeButton) {
+            throw new Error("Game Over screen elements not found");
+        }
+        this._gameOverScreenElement = screen;
+        this._gameOverMessageElement = messageElem;
+        this._restartButtonElement = restartButton;
+        this._closeButtonElement = closeButton;
+    }
+    showGameOverScreen(message) {
+        this._gameOverMessageElement.textContent = message;
+        this._gameOverScreenElement.classList.remove("hidden");
+        this._gameOverScreenElement.classList.add("visible");
+    }
+    hideGameOverScreen() {
+        this._gameOverScreenElement.classList.add("hidden");
+        this._gameOverScreenElement.classList.remove("visible");
+    }
+    onRestartClicked(callback) {
+        this._restartButtonElement.onclick = callback;
+    }
+    onCloseClicked(callback) {
+        this._closeButtonElement.onclick = callback;
     }
     reset() {
         this.resetTimer();

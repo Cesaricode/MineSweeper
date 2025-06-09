@@ -7,6 +7,10 @@ export class UIRenderer {
     private _tileElements: HTMLElement[][] = [];
     private _bombCountElement!: HTMLElement;
     private _timerElement!: HTMLElement;
+    private _gameOverScreenElement!: HTMLElement;
+    private _gameOverMessageElement!: HTMLElement;
+    private _restartButtonElement!: HTMLElement;
+    private _closeButtonElement!: HTMLElement;
     private _timerIntervalId: number | null = null;
     private _startTime: number = 0;
     private _elapsedTime: number = 0;
@@ -17,6 +21,7 @@ export class UIRenderer {
         this.setBoardElement();
         this.setBombCountElement();
         this.setTimerElement();
+        this.setGameOverScreenElements();
     }
 
     public setBoardEventHandlers(game: Game) {
@@ -248,6 +253,41 @@ export class UIRenderer {
                 this.updateTile(game, row, col);
             }
         }
+    }
+
+    private setGameOverScreenElements(): void {
+        const screen: HTMLElement | null = document.getElementById("game-over-screen");
+        const messageElem: HTMLElement | null = document.getElementById("game-over-message");
+        const restartButton: HTMLElement | null = document.getElementById("restart-button");
+        const closeButton: HTMLElement | null = document.getElementById("close-game-over");
+
+        if (!screen || !messageElem || !restartButton || !closeButton) {
+            throw new Error("Game Over screen elements not found");
+        }
+
+        this._gameOverScreenElement = screen;
+        this._gameOverMessageElement = messageElem;
+        this._restartButtonElement = restartButton;
+        this._closeButtonElement = closeButton;
+    }
+
+    public showGameOverScreen(message: string): void {
+        this._gameOverMessageElement.textContent = message;
+        this._gameOverScreenElement.classList.remove("hidden");
+        this._gameOverScreenElement.classList.add("visible");
+    }
+
+    public hideGameOverScreen(): void {
+        this._gameOverScreenElement.classList.add("hidden");
+        this._gameOverScreenElement.classList.remove("visible");
+    }
+
+    public onRestartClicked(callback: () => void): void {
+        this._restartButtonElement.onclick = callback;
+    }
+
+    public onCloseClicked(callback: () => void): void {
+        this._closeButtonElement.onclick = callback;
     }
 
     public reset(): void {

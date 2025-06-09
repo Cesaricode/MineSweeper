@@ -8,6 +8,7 @@ export class GameController {
         this._currentThemeKey = "minesweeper";
         this._themeManager = new ThemeManager();
         this._ui = new UIRenderer();
+        this.setupUICallbacks();
     }
     init() {
         this.bindEvents();
@@ -97,11 +98,11 @@ export class GameController {
         });
         this._game.addEventListener("gameWon", () => {
             this._ui.endGame(this._game);
-            setTimeout(() => alert(`You won!`), 100);
+            this._ui.showGameOverScreen("You won!");
         });
         this._game.addEventListener("gameLost", () => {
             this._ui.endGame(this._game);
-            setTimeout(() => alert(`You lost!`), 100);
+            this._ui.showGameOverScreen("You lost!");
         });
     }
     applyThemeConfig() {
@@ -111,5 +112,14 @@ export class GameController {
         this._themeManager.applyTheme(this._game.board.bombCount);
         this._ui.setBombIcon(this._themeManager.theme.icon);
         this._ui.setBombCountElement();
+    }
+    setupUICallbacks() {
+        this._ui.onRestartClicked(() => {
+            this._ui.hideGameOverScreen();
+            this.startGameFromSettings();
+        });
+        this._ui.onCloseClicked(() => {
+            this._ui.hideGameOverScreen();
+        });
     }
 }
