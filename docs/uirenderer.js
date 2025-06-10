@@ -9,48 +9,14 @@ export class UIRenderer {
         this._bombIcon = "💣";
         this._pendingTileUpdates = [];
         this._rafId = null;
-        this.handleTileClick = (game) => debounce((e) => {
-            const target = e.target;
-            if (!target.classList.contains("tile"))
+        this._pressedTile = null;
+        this._pressedRightTile = null;
+        this._cancelTimerId = null;
+        this._cancelThreshold = 150;
+        this._actionCanceled = false;
+        this.handleTilePointerDown = (game) => (e) => {
+            if (e.button !== 0)
                 return;
-            const row = Number(target.dataset.row);
-            const col = Number(target.dataset.col);
-            if (isNaN(row) || isNaN(col))
-                return;
-            if (game.status !== "playing")
-                return;
-            if (!this._timerRunning)
-                this.startTimer();
-            try {
-                game.reveal(row, col);
-            }
-            catch (err) {
-                alert(err.message);
-            }
-        }, 100);
-        this.handleTileRightClick = (game) => (e) => {
-            const target = e.target;
-            if (!target.classList.contains("tile"))
-                return;
-            e.preventDefault();
-            debounce(() => {
-                const row = Number(target.dataset.row);
-                const col = Number(target.dataset.col);
-                if (isNaN(row) || isNaN(col))
-                    return;
-                if (game.status !== "playing")
-                    return;
-                if (!this._timerRunning)
-                    this.startTimer();
-                try {
-                    game.toggleFlag(row, col);
-                }
-                catch (err) {
-                    alert(err.message);
-                }
-            }, 100)();
-        };
-        this.handleTileMouseDown = (game) => debounce((e) => {
             const target = e.target;
             if (!target.classList.contains("tile"))
                 return;
@@ -64,8 +30,64 @@ export class UIRenderer {
                 e.button === 0) {
                 this.handleHighlightNeighbors(e, tile, this._boardElement, game);
             }
-        }, 100);
-        this.handleTileMouseUp = (game) => debounce((e) => {
+            this._pressedTile = { row, col, time: Date.now() };
+            if (tile.status === "hidden") {
+                target.classList.add("pressed");
+            }
+        };
+        this.handleTilePointerUp = (game) => (e) => {
+            if (e.button !== 0)
+                return;
+            if (!this._pressedTile)
+                return;
+            const { row, col, time } = this._pressedTile;
+            const now = Date.now();
+            const target = e.target;
+            this._pressedTile = null;
+            if (this._cancelTimerId) {
+                clearTimeout(this._cancelTimerId);
+                this._cancelTimerId = null;
+            }
+            document.querySelectorAll(".tile.pressed").forEach(el => el.classList.remove("pressed"));
+            const isSameTile = target.classList.contains("tile") &&
+                Number(target.dataset.row) === row &&
+                Number(target.dataset.col) === col;
+            const withinThreshold = (now - time) < this._cancelThreshold;
+            if ((isSameTile || withinThreshold) && !this._actionCanceled) {
+                game.reveal(row, col);
+            }
+            this.clearHighlights();
+        };
+        this.handleTilePointerLeave = (e) => {
+            if (!this._pressedTile)
+                return;
+            const leftElement = e.target;
+            if (!leftElement.classList.contains("tile"))
+                return;
+            this._cancelTimerId = window.setTimeout(() => {
+                this._actionCanceled = true;
+                document.querySelectorAll('.tile.pressed').forEach(el => el.classList.remove('pressed'));
+            }, this._cancelThreshold);
+        };
+        this.handleTilePointerEnter = (e) => {
+            if (!this._pressedTile)
+                return;
+            const target = e.target;
+            const { row, col } = this._pressedTile;
+            if (target.classList.contains("tile") &&
+                Number(target.dataset.row) === row &&
+                Number(target.dataset.col) === col) {
+                if (this._cancelTimerId) {
+                    clearTimeout(this._cancelTimerId);
+                    this._cancelTimerId = null;
+                }
+                this._actionCanceled = false;
+                target.classList.add("pressed");
+            }
+        };
+        this.handleTileRightPointerDown = (e) => {
+            if (e.button !== 2)
+                return;
             const target = e.target;
             if (!target.classList.contains("tile"))
                 return;
@@ -73,13 +95,45 @@ export class UIRenderer {
             const col = Number(target.dataset.col);
             if (isNaN(row) || isNaN(col))
                 return;
-            const tile = game.getTile(row, col);
-            if (tile.status === "revealed" && tile.adjacentBombCount > 0) {
-                this.clearHighlights();
+            this._pressedRightTile = { row, col, time: Date.now() };
+            target.classList.add("flag-pressed");
+        };
+        this.handleTileRightPointerUp = (game) => (e) => {
+            if (e.button !== 2)
+                return;
+            if (!this._pressedRightTile)
+                return;
+            const { row, col, time } = this._pressedRightTile;
+            this._pressedRightTile = null;
+            document.querySelectorAll('.tile.flag-pressed').forEach(el => el.classList.remove('flag-pressed'));
+            const target = e.target;
+            const isSameTile = target.classList.contains("tile") &&
+                Number(target.dataset.row) === row &&
+                Number(target.dataset.col) === col;
+            const withinThreshold = (Date.now() - time) < this._cancelThreshold;
+            if (isSameTile || withinThreshold) {
+                if (game.status !== "playing")
+                    return;
+                if (!this._timerRunning)
+                    this.startTimer();
+                try {
+                    game.toggleFlag(row, col);
+                }
+                catch (err) {
+                    alert(err.message);
+                }
             }
-        }, 100);
+            this.clearHighlights();
+        };
+        this.handleTileContextMenu = (e) => {
+            const target = e.target;
+            if (target.classList.contains("tile")) {
+                e.preventDefault();
+            }
+        };
         this.handleBoardMouseLeave = debounce((e) => {
             this.clearHighlights();
+            this.clearPressed();
         }, 100);
         this.tileStateHandlers = {
             "hidden": (tileElement, tile) => this.applyHiddenState(tileElement),
@@ -95,11 +149,22 @@ export class UIRenderer {
     setBoardEventHandlers(game) {
         this._boardElement.replaceWith(this._boardElement.cloneNode(true));
         this._boardElement = document.getElementById("board");
-        this._boardElement.addEventListener("click", this.handleTileClick(game));
-        this._boardElement.addEventListener("contextmenu", this.handleTileRightClick(game));
-        this._boardElement.addEventListener("mousedown", this.handleTileMouseDown(game));
-        this._boardElement.addEventListener("mouseup", this.handleTileMouseUp(game));
+        this._boardElement.addEventListener("pointerdown", this.handleTilePointerDown(game));
+        this._boardElement.addEventListener("pointerup", this.handleTilePointerUp(game));
+        this._boardElement.addEventListener("pointerdown", this.handleTileRightPointerDown);
+        this._boardElement.addEventListener("pointerup", this.handleTileRightPointerUp(game));
+        this._boardElement.addEventListener("pointerleave", this.handleTilePointerLeave);
+        this._boardElement.addEventListener("pointerenter", this.handleTilePointerEnter);
         this._boardElement.addEventListener("mouseleave", this.handleBoardMouseLeave);
+        this._boardElement.addEventListener("contextmenu", this.handleTileContextMenu);
+    }
+    clearPressed() {
+        document.querySelectorAll(".tile.pressed").forEach(element => {
+            element.classList.remove("pressed");
+        });
+        document.querySelectorAll(".tile.flag-pressed").forEach(element => {
+            element.classList.remove("flag-pressed");
+        });
     }
     clearBoardEventHandlers() {
         var _a;
