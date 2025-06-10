@@ -107,7 +107,11 @@ export class Game extends EventTarget {
     }
     toggleFlag(row, col) {
         this.assertPlaying();
-        this._board.toggleFlag(this._board.getTile(row, col));
+        const tile = this._board.getTile(row, col);
+        if (tile.status === "revealed") {
+            return;
+        }
+        this._board.toggleFlag(tile);
         this.dispatchEvent(new CustomEvent("flagToggled", {
             detail: { row, col }
         }));
