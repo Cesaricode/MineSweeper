@@ -175,7 +175,7 @@ export class GameController {
         });
     }
     saveGame() {
-        if (!this._game || this._game.status !== "playing")
+        if (!this._game || this._game.status !== "playing" || !this._game.board.bombsDeployed)
             return;
         const elapsedTime = this._ui.elapsedTime;
         const state = {

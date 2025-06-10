@@ -8,11 +8,14 @@ export class Board {
         this._bombsDeployed = false;
         this.rows = rows;
         this.cols = cols;
-        this.bombCount = bombCount;
+        this._bombCount = bombCount;
         this.populateGrid();
     }
     get grid() {
         return this._grid;
+    }
+    get bombCount() {
+        return this._bombCount;
     }
     populateGrid() {
         for (let i = 0; i < this.rows; i++) {
@@ -50,7 +53,7 @@ export class Board {
         }
     }
     placeBombs(positions) {
-        for (let i = 0; i < this.bombCount; i++) {
+        for (let i = 0; i < this._bombCount; i++) {
             const [row, col] = positions[i];
             this._grid[row][col].setBomb();
         }
@@ -129,5 +132,13 @@ export class Board {
                 callback(tile);
             });
         });
+    }
+    restoreInternalState(flagCount, bombCount) {
+        this._flagCount = flagCount;
+        this._bombCount = bombCount;
+        this._bombsDeployed = true;
+    }
+    get bombsDeployed() {
+        return this._bombsDeployed;
     }
 }

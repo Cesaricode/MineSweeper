@@ -182,14 +182,33 @@ export class Game extends EventTarget {
     }
 
     public restoreBoardState(state: SavedGameState): void {
+        let flagCount: number = 0;
+        let bombCount: number = 0;
+        let anyRevealed: boolean = false;
         for (let r = 0; r < state.rows; r++) {
             for (let c = 0; c < state.cols; c++) {
                 const tileState: { status: string; isBomb: boolean; adjacentBombCount: number; } = state.board[r][c];
                 const tile: Tile = this.board.grid[r][c];
                 tile.setStatus(tileState.status as TileStatus);
-                if (tileState.isBomb) tile.setBomb();
+                if (tileState.isBomb) {
+                    bombCount++;
+                    tile.setBomb();
+                }
                 tile.setAdjacentBombCount(tileState.adjacentBombCount);
+                if (tileState.status === "flagged") {
+                    flagCount++;
+                }
+                if (tileState.status !== "hidden") {
+                    anyRevealed = true;
+                }
             }
+        }
+        if (bombCount === 0 && !anyRevealed) {
+            this.board.restoreInternalState(flagCount, bombCount);
+            this._isFirstMove = true;
+        } else {
+            this.board.restoreInternalState(flagCount, bombCount);
+            this._isFirstMove = false;
         }
         this.setStatus(state.status as GameStatus);
     }

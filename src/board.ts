@@ -5,7 +5,7 @@ import { directions } from "./util.js";
 export class Board {
     readonly rows: number;
     readonly cols: number;
-    readonly bombCount: number;
+    private _bombCount: number;
     private _grid: Tile[][] = [];
     private _flagCount: number = 0;
     private _bombsDeployed: boolean = false;
@@ -13,13 +13,16 @@ export class Board {
     constructor(rows: number, cols: number, bombCount: number) {
         this.rows = rows;
         this.cols = cols;
-        this.bombCount = bombCount;
+        this._bombCount = bombCount;
         this.populateGrid();
     }
 
-
     public get grid(): Tile[][] {
         return this._grid;
+    }
+
+    public get bombCount(): number {
+        return this._bombCount;
     }
 
     private populateGrid(): void {
@@ -62,7 +65,7 @@ export class Board {
     }
 
     private placeBombs(positions: [number, number][]): void {
-        for (let i = 0; i < this.bombCount; i++) {
+        for (let i = 0; i < this._bombCount; i++) {
             const [row, col]: number[] = positions[i];
             this._grid[row][col].setBomb();
         }
@@ -156,5 +159,15 @@ export class Board {
                 callback(tile);
             });
         });
+    }
+
+    public restoreInternalState(flagCount: number, bombCount: number): void {
+        this._flagCount = flagCount;
+        this._bombCount = bombCount;
+        this._bombsDeployed = true;
+    }
+
+    public get bombsDeployed(): boolean {
+        return this._bombsDeployed;
     }
 }

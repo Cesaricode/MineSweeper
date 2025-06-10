@@ -196,7 +196,7 @@ export class GameController {
     }
 
     private saveGame(): void {
-        if (!this._game || this._game.status !== "playing") return;
+        if (!this._game || this._game.status !== "playing" || !this._game.board.bombsDeployed) return;
         const elapsedTime: number = this._ui.elapsedTime;
         const state: SavedGameState = {
             rows: this._game!.board.rows,
