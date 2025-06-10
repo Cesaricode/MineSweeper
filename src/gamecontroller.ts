@@ -42,6 +42,7 @@ export class GameController {
             e.preventDefault();
             try {
                 this.startGameFromSettings();
+                this.deleteSaveGame();
             } catch (err) {
                 alert((err as Error).message);
             }
