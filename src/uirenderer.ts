@@ -250,8 +250,8 @@ export class UIRenderer {
 
     public endGame(game: Game): void {
         this.stopTimer();
-        this.clearBoardEventHandlers();
         this.renderEndBoard(game);
+        this.clearBoardEventHandlers();
     }
 
     private renderEndBoard(game: Game): void {

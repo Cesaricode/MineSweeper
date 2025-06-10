@@ -224,8 +224,8 @@ export class UIRenderer {
     }
     endGame(game) {
         this.stopTimer();
-        this.clearBoardEventHandlers();
         this.renderEndBoard(game);
+        this.clearBoardEventHandlers();
     }
     renderEndBoard(game) {
         for (let row = 0; row < game.board.rows; row++) {
