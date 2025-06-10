@@ -150,6 +150,10 @@ export class Game extends EventTarget {
         return this._board;
     }
 
+    public get tilesToReveal(): number {
+        return this._tilesToReveal;
+    }
+
     private assertPlaying(): void {
         if (this._status !== "playing") {
             throw new Error(`Cannot modify board state; game is already ${this._status}`);
@@ -209,6 +213,7 @@ export class Game extends EventTarget {
         } else {
             this.board.restoreInternalState(flagCount, bombCount);
             this._isFirstMove = false;
+            this._tilesToReveal = state.tilesToReveal;
         }
         this.setStatus(state.status as GameStatus);
     }

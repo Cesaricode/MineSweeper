@@ -40,6 +40,8 @@ export class UIRenderer {
                     return;
                 if (game.status !== "playing")
                     return;
+                if (!this._timerRunning)
+                    this.startTimer();
                 try {
                     game.toggleFlag(row, col);
                 }
@@ -133,6 +135,7 @@ export class UIRenderer {
     startTimer() {
         if (this._timerRunning)
             return;
+        this.updateTimerElement();
         this._startTime = Date.now() - this._elapsedTime;
         this._timerRunning = true;
         this._timerIntervalId = window.setInterval(() => {

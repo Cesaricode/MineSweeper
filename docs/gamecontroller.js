@@ -178,7 +178,7 @@ export class GameController {
     saveGame() {
         if (!this._game || this._game.status !== "playing" || !this._game.board.bombsDeployed)
             return;
-        const elapsedTime = this._ui.elapsedTime;
+        const elapsedTime = this._ui.elapsedTime + 1000;
         const state = {
             rows: this._game.board.rows,
             cols: this._game.board.cols,
@@ -188,8 +188,9 @@ export class GameController {
                 isBomb: tile.isBomb(),
                 adjacentBombCount: tile.adjacentBombCount
             }))),
-            elapsedTime,
-            status: this._game.status
+            elapsedTime: elapsedTime,
+            status: this._game.status,
+            tilesToReveal: this._game.tilesToReveal
         };
         localStorage.setItem("minesweeper-save", JSON.stringify(state));
     }
@@ -211,6 +212,7 @@ export class GameController {
         this.setGameEventListeners();
         this.applyThemeConfig();
         this._ui.setElapsedTime(state.elapsedTime);
+        this._ui.startTimer();
         this._ui.setBoardEventHandlers(this._game);
         this._ui.renderBoard(this._game);
         this._ui.updateBombCount(this._game);

@@ -62,6 +62,7 @@ export class UIRenderer {
             const col: number = Number(target.dataset.col);
             if (isNaN(row) || isNaN(col)) return;
             if (game.status !== "playing") return;
+            if (!this._timerRunning) this.startTimer();
             try {
                 game.toggleFlag(row, col);
             } catch (err) {
@@ -135,8 +136,9 @@ export class UIRenderer {
         this._timerElement.textContent = seconds.toString().padStart(3, '0');
     }
 
-    private startTimer(): void {
+    public startTimer(): void {
         if (this._timerRunning) return;
+        this.updateTimerElement();
         this._startTime = Date.now() - this._elapsedTime;
         this._timerRunning = true;
 

@@ -32,4 +32,5 @@ export interface SavedGameState {
     }[][];
     elapsedTime: number;
     status: string;
+    tilesToReveal: number;
 }
