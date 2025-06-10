@@ -177,8 +177,17 @@ export class Game extends EventTarget {
         }));
         if (this._tilesToReveal === 0) {
             this._status = "won";
+            this.flagRemainingBombs();
             this.dispatchEvent(new CustomEvent("gameWon"));
         }
+    }
+
+    private flagRemainingBombs(): void {
+        this._board.forEachTile(tile => {
+            if (tile.isBomb() && tile.status !== "flagged") {
+                tile.setStatus("flagged");
+            }
+        });
     }
 
     private setStatus(status: GameStatus): void {
