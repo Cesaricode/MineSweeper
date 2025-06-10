@@ -155,7 +155,7 @@ export class Game extends EventTarget {
     flagRemainingBombs() {
         this._board.forEachTile(tile => {
             if (tile.isBomb() && tile.status !== "flagged") {
-                tile.setStatus("flagged");
+                this._board.toggleFlag(tile);
             }
         });
     }
