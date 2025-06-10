@@ -1,9 +1,9 @@
 export class SoundManager {
     constructor() {
-        this._tileClickSound = new Audio("./tileclicksound.flac");
-        this._bombClickSound = new Audio("./bombsound.wav");
-        this._victorySound = new Audio("./victorysound.wav");
-        this._flagSound = new Audio("./flagsound.wav");
+        this._tileClickSound = new Audio("./sounds/tileclicksound.flac");
+        this._bombClickSound = new Audio("./sounds/bombsound.wav");
+        this._victorySound = new Audio("./sounds/victorysound.wav");
+        this._flagSound = new Audio("./sounds/flagsound.wav");
         this._muted = false;
     }
     setMuted(muted) {

@@ -1,8 +1,8 @@
 export class SoundManager {
-    private _tileClickSound: HTMLAudioElement = new Audio("./tileclicksound.flac");
-    private _bombClickSound: HTMLAudioElement = new Audio("./bombsound.wav");
-    private _victorySound: HTMLAudioElement = new Audio("./victorysound.wav");
-    private _flagSound: HTMLAudioElement = new Audio("./flagsound.wav");
+    private _tileClickSound: HTMLAudioElement = new Audio("./sounds/tileclicksound.flac");
+    private _bombClickSound: HTMLAudioElement = new Audio("./sounds/bombsound.wav");
+    private _victorySound: HTMLAudioElement = new Audio("./sounds/victorysound.wav");
+    private _flagSound: HTMLAudioElement = new Audio("./sounds/flagsound.wav");
     private _muted: boolean = false;
 
     public setMuted(muted: boolean): void {
