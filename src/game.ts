@@ -1,7 +1,7 @@
 import { Board } from "./board.js";
-import { Tile } from "./tile.js";
+import { Tile, TileStatus } from "./tile.js";
 import { Difficulty, difficultyBombRange, getBombCount } from "./difficulty.js";
-import { isInBounds } from "./util.js";
+import { isInBounds, SavedGameState } from "./util.js";
 import { directions } from "./util.js";
 
 export type GameStatus = "playing" | "won" | "lost";
@@ -17,19 +17,14 @@ export class Game extends EventTarget {
 
     constructor(rows: number, cols: number, difficulty: Difficulty) {
         super();
-        const isValid = (n: number) => n >= 5 && n <= 100;
-        if (!isValid(rows)) throw new Error("Invalid row count");
-        if (!isValid(cols)) throw new Error("Invalid column count");
-
-        if (!(difficulty in difficultyBombRange)) {
-            throw new Error(`Invalid difficulty: ${difficulty}`);
-        }
+        this.validateDimensions(rows, cols);
+        this.validateDifficulty(difficulty);
 
         this.rows = rows;
         this.cols = cols;
         this.difficulty = difficulty;
 
-        const bombCount = getBombCount(rows, cols, difficulty);
+        const bombCount: number = this.calculateBombCount(rows, cols, difficulty);
         this._board = new Board(rows, cols, bombCount);
         this._tilesToReveal = rows * cols - bombCount;
     }
@@ -88,31 +83,33 @@ export class Game extends EventTarget {
         }
     }
 
+    private getUnvisitedNeighbors(r: number, c: number, visited: Set<string>): [number, number][] {
+        const result: [number, number][] = [];
+        for (const [dr, dc] of directions) {
+            const nr: number = r + dr;
+            const nc: number = c + dc;
+            if (isInBounds(nr, nc, this.rows, this.cols) && !visited.has(`${nr},${nc}`)) {
+                result.push([nr, nc]);
+            }
+        }
+        return result;
+    }
+
     private floodReveal(row: number, col: number): void {
         const stack: [number, number][] = [[row, col]];
         const visited = new Set<string>();
 
         while (stack.length) {
             const [r, c] = stack.pop()!;
-            const key = `${r},${c}`;
-            if (visited.has(key)) {
-                continue;
-            }
+            const key: string = `${r},${c}`;
+            if (visited.has(key)) continue;
             visited.add(key);
-            const tile = this._board.getTile(r, c);
+            const tile: Tile = this._board.getTile(r, c);
             if (tile.status !== "hidden") continue;
             this.floodRevealTile(tile);
 
             if (tile.adjacentBombCount === 0) {
-                for (const [dr, dc] of directions) {
-                    const nr = r + dr;
-                    const nc = c + dc;
-                    if (isInBounds(nr, nc, this.rows, this.cols)) {
-                        if (!visited.has(`${nr},${nc}`)) {
-                            stack.push([nr, nc]);
-                        }
-                    }
-                }
+                stack.push(...this.getUnvisitedNeighbors(r, c, visited));
             }
         }
     }
@@ -178,5 +175,38 @@ export class Game extends EventTarget {
             this._status = "won";
             this.dispatchEvent(new CustomEvent("gameWon"));
         }
+    }
+
+    private setStatus(status: GameStatus): void {
+        this._status = status;
+    }
+
+    public restoreBoardState(state: SavedGameState): void {
+        for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+                const tileState: { status: string; isBomb: boolean; adjacentBombCount: number; } = state.board[r][c];
+                const tile: Tile = this.board.grid[r][c];
+                tile.setStatus(tileState.status as TileStatus);
+                if (tileState.isBomb) tile.setBomb();
+                tile.setAdjacentBombCount(tileState.adjacentBombCount);
+            }
+        }
+        this.setStatus(state.status as GameStatus);
+    }
+
+    private validateDimensions(rows: number, cols: number): void {
+        const isValid: (n: number) => boolean = (n: number) => n >= 5 && n <= 100;
+        if (!isValid(rows)) throw new Error("Invalid row count");
+        if (!isValid(cols)) throw new Error("Invalid column count");
+    }
+
+    private validateDifficulty(difficulty: Difficulty): void {
+        if (!(difficulty in difficultyBombRange)) {
+            throw new Error(`Invalid difficulty: ${difficulty}`);
+        }
+    }
+
+    private calculateBombCount(rows: number, cols: number, difficulty: Difficulty): number {
+        return getBombCount(rows, cols, difficulty);
     }
 }

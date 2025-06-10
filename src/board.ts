@@ -17,6 +17,11 @@ export class Board {
         this.populateGrid();
     }
 
+
+    public get grid(): Tile[][] {
+        return this._grid;
+    }
+
     private populateGrid(): void {
         for (let i = 0; i < this.rows; i++) {
             this._grid[i] = [];

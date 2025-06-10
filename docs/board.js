@@ -11,6 +11,9 @@ export class Board {
         this.bombCount = bombCount;
         this.populateGrid();
     }
+    get grid() {
+        return this._grid;
+    }
     populateGrid() {
         for (let i = 0; i < this.rows; i++) {
             this._grid[i] = [];

@@ -7,18 +7,12 @@ export class Game extends EventTarget {
         super();
         this._isFirstMove = true;
         this._status = "playing";
-        const isValid = (n) => n >= 5 && n <= 100;
-        if (!isValid(rows))
-            throw new Error("Invalid row count");
-        if (!isValid(cols))
-            throw new Error("Invalid column count");
-        if (!(difficulty in difficultyBombRange)) {
-            throw new Error(`Invalid difficulty: ${difficulty}`);
-        }
+        this.validateDimensions(rows, cols);
+        this.validateDifficulty(difficulty);
         this.rows = rows;
         this.cols = cols;
         this.difficulty = difficulty;
-        const bombCount = getBombCount(rows, cols, difficulty);
+        const bombCount = this.calculateBombCount(rows, cols, difficulty);
         this._board = new Board(rows, cols, bombCount);
         this._tilesToReveal = rows * cols - bombCount;
     }
@@ -68,30 +62,32 @@ export class Game extends EventTarget {
             this._isFirstMove = false;
         }
     }
+    getUnvisitedNeighbors(r, c, visited) {
+        const result = [];
+        for (const [dr, dc] of directions) {
+            const nr = r + dr;
+            const nc = c + dc;
+            if (isInBounds(nr, nc, this.rows, this.cols) && !visited.has(`${nr},${nc}`)) {
+                result.push([nr, nc]);
+            }
+        }
+        return result;
+    }
     floodReveal(row, col) {
         const stack = [[row, col]];
         const visited = new Set();
         while (stack.length) {
             const [r, c] = stack.pop();
             const key = `${r},${c}`;
-            if (visited.has(key)) {
+            if (visited.has(key))
                 continue;
-            }
             visited.add(key);
             const tile = this._board.getTile(r, c);
             if (tile.status !== "hidden")
                 continue;
             this.floodRevealTile(tile);
             if (tile.adjacentBombCount === 0) {
-                for (const [dr, dc] of directions) {
-                    const nr = r + dr;
-                    const nc = c + dc;
-                    if (isInBounds(nr, nc, this.rows, this.cols)) {
-                        if (!visited.has(`${nr},${nc}`)) {
-                            stack.push([nr, nc]);
-                        }
-                    }
-                }
+                stack.push(...this.getUnvisitedNeighbors(r, c, visited));
             }
         }
     }
@@ -147,5 +143,36 @@ export class Game extends EventTarget {
             this._status = "won";
             this.dispatchEvent(new CustomEvent("gameWon"));
         }
+    }
+    setStatus(status) {
+        this._status = status;
+    }
+    restoreBoardState(state) {
+        for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+                const tileState = state.board[r][c];
+                const tile = this.board.grid[r][c];
+                tile.setStatus(tileState.status);
+                if (tileState.isBomb)
+                    tile.setBomb();
+                tile.setAdjacentBombCount(tileState.adjacentBombCount);
+            }
+        }
+        this.setStatus(state.status);
+    }
+    validateDimensions(rows, cols) {
+        const isValid = (n) => n >= 5 && n <= 100;
+        if (!isValid(rows))
+            throw new Error("Invalid row count");
+        if (!isValid(cols))
+            throw new Error("Invalid column count");
+    }
+    validateDifficulty(difficulty) {
+        if (!(difficulty in difficultyBombRange)) {
+            throw new Error(`Invalid difficulty: ${difficulty}`);
+        }
+    }
+    calculateBombCount(rows, cols, difficulty) {
+        return getBombCount(rows, cols, difficulty);
     }
 }

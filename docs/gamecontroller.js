@@ -7,6 +7,42 @@ export class GameController {
     constructor() {
         this._game = null;
         this._currentThemeKey = "minesweeper";
+        this.handleTileRevealed = (e) => {
+            this._soundManager.playTileClick();
+            const detail = e.detail;
+            if (detail && typeof detail.row === "number" && typeof detail.col === "number") {
+                this._ui.updateTile(this._game, detail.row, detail.col);
+            }
+            else {
+                this._ui.renderBoard(this._game);
+            }
+            this._ui.updateBombCount(this._game);
+            this.saveGame();
+        };
+        this.handleFlagToggled = (e) => {
+            this._soundManager.playFlag();
+            const detail = e.detail;
+            if (detail && typeof detail.row === "number" && typeof detail.col === "number") {
+                this._ui.updateTile(this._game, detail.row, detail.col);
+            }
+            else {
+                this._ui.renderBoard(this._game);
+            }
+            this._ui.updateBombCount(this._game);
+            this.saveGame();
+        };
+        this.handleGameWon = () => {
+            this._soundManager.playVictory();
+            this._ui.endGame(this._game);
+            this._ui.showGameOverScreen("You won!");
+            this.deleteSaveGame();
+        };
+        this.handleGameLost = () => {
+            this._soundManager.playBomb();
+            this._ui.endGame(this._game);
+            this._ui.showGameOverScreen("You lost!");
+            this.deleteSaveGame();
+        };
         this._ui = new UIRenderer();
         this._themeManager = new ThemeManager();
         this._soundManager = new SoundManager();
@@ -16,10 +52,13 @@ export class GameController {
         this.bindEvents();
         this.bindSoundToggle();
         this.startGameFromSettings();
+        this.tryRestoreSavedGame();
     }
     bindEvents() {
         this.bindSettingsForm();
-        this.bindThemeSelectors();
+        this.bindThemeSelect();
+        this.bindDarkModeSelect();
+        this.bindBeforeUnload();
     }
     bindSettingsForm() {
         const settingsForm = document.getElementById("settings-form");
@@ -35,10 +74,9 @@ export class GameController {
             }
         });
     }
-    bindThemeSelectors() {
+    bindThemeSelect() {
         const themeSelect = document.getElementById("theme-mode");
-        const darkModeSelect = document.getElementById("dark-mode");
-        if (!themeSelect || !darkModeSelect)
+        if (!themeSelect)
             return;
         themeSelect.addEventListener("change", (e) => {
             try {
@@ -55,6 +93,11 @@ export class GameController {
                 alert(err.message);
             }
         });
+    }
+    bindDarkModeSelect() {
+        const darkModeSelect = document.getElementById("dark-mode");
+        if (!darkModeSelect)
+            return;
         darkModeSelect.addEventListener("change", () => {
             try {
                 this._themeManager.toggleDarkMode();
@@ -64,10 +107,12 @@ export class GameController {
             }
         });
     }
-    bindSoundToggle() {
-        const btn = document.getElementById("sound-toggle");
-        if (!btn)
-            return;
+    bindBeforeUnload() {
+        window.addEventListener("beforeunload", () => {
+            this.saveGame();
+        });
+    }
+    initializeSoundToggleButton(btn) {
         const saved = localStorage.getItem("minesweeper-sound-muted");
         if (saved !== null) {
             const muted = saved === "true";
@@ -75,6 +120,8 @@ export class GameController {
             btn.ariaPressed = muted ? "true" : "false";
             btn.textContent = muted ? "🔇" : "🔊";
         }
+    }
+    handleSoundToggleClick(btn) {
         btn.addEventListener("click", () => {
             const muted = !this._soundManager.muted;
             this._soundManager.setMuted(muted);
@@ -82,6 +129,13 @@ export class GameController {
             btn.textContent = muted ? "🔇" : "🔊";
             localStorage.setItem("minesweeper-sound-muted", muted ? "true" : "false");
         });
+    }
+    bindSoundToggle() {
+        const btn = document.getElementById("sound-toggle");
+        if (!btn)
+            return;
+        this.initializeSoundToggleButton(btn);
+        this.handleSoundToggleClick(btn);
     }
     startGameFromSettings() {
         this._ui.reset();
@@ -98,38 +152,10 @@ export class GameController {
     setGameEventListeners() {
         if (!this._game)
             throw new Error("Cannot set game event listeners - missing game");
-        this._game.addEventListener("tileRevealed", (e) => {
-            this._soundManager.playTileClick();
-            const detail = e.detail;
-            if (detail && typeof detail.row === "number" && typeof detail.col === "number") {
-                this._ui.updateTile(this._game, detail.row, detail.col);
-            }
-            else {
-                this._ui.renderBoard(this._game);
-            }
-            this._ui.updateBombCount(this._game);
-        });
-        this._game.addEventListener("flagToggled", (e) => {
-            this._soundManager.playFlag();
-            const detail = e.detail;
-            if (detail && typeof detail.row === "number" && typeof detail.col === "number") {
-                this._ui.updateTile(this._game, detail.row, detail.col);
-            }
-            else {
-                this._ui.renderBoard(this._game);
-            }
-            this._ui.updateBombCount(this._game);
-        });
-        this._game.addEventListener("gameWon", () => {
-            this._soundManager.playVictory();
-            this._ui.endGame(this._game);
-            this._ui.showGameOverScreen("You won!");
-        });
-        this._game.addEventListener("gameLost", () => {
-            this._soundManager.playBomb();
-            this._ui.endGame(this._game);
-            this._ui.showGameOverScreen("You lost!");
-        });
+        this._game.addEventListener("tileRevealed", this.handleTileRevealed);
+        this._game.addEventListener("flagToggled", this.handleFlagToggled);
+        this._game.addEventListener("gameWon", this.handleGameWon);
+        this._game.addEventListener("gameLost", this.handleGameLost);
     }
     applyThemeConfig() {
         if (!this._game)
@@ -147,5 +173,54 @@ export class GameController {
         this._ui.onCloseClicked(() => {
             this._ui.hideGameOverScreen();
         });
+    }
+    saveGame() {
+        if (!this._game || this._game.status !== "playing")
+            return;
+        const elapsedTime = this._ui.elapsedTime;
+        const state = {
+            rows: this._game.board.rows,
+            cols: this._game.board.cols,
+            difficulty: this._game.difficulty,
+            board: this._game.board.grid.map(row => row.map(tile => ({
+                status: tile.status,
+                isBomb: tile.isBomb(),
+                adjacentBombCount: tile.adjacentBombCount
+            }))),
+            elapsedTime,
+            status: this._game.status
+        };
+        localStorage.setItem("minesweeper-save", JSON.stringify(state));
+    }
+    loadGame() {
+        const data = localStorage.getItem("minesweeper-save");
+        if (!data)
+            return null;
+        try {
+            return JSON.parse(data);
+        }
+        catch (_a) {
+            return null;
+        }
+    }
+    restoreSaveGame(state) {
+        const game = new Game(state.rows, state.cols, state.difficulty);
+        game.restoreBoardState(state);
+        this._game = game;
+        this.setGameEventListeners();
+        this.applyThemeConfig();
+        this._ui.setElapsedTime(state.elapsedTime);
+        this._ui.setBoardEventHandlers(this._game);
+        this._ui.renderBoard(this._game);
+        this._ui.updateBombCount(this._game);
+    }
+    deleteSaveGame() {
+        localStorage.removeItem("minesweeper-save");
+    }
+    tryRestoreSavedGame() {
+        const saved = this.loadGame();
+        if (saved) {
+            this.restoreSaveGame(saved);
+        }
     }
 }

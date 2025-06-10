@@ -1,5 +1,6 @@
 import { Game } from "./game.js";
 import { Tile, TileStatus } from "./tile.js";
+import { debounce } from "./util.js";
 
 export class UIRenderer {
 
@@ -16,6 +17,8 @@ export class UIRenderer {
     private _elapsedTime: number = 0;
     private _timerRunning: boolean = false;
     private _bombIcon: string = "💣";
+    private _pendingTileUpdates: { row: number, col: number; }[] = [];
+    private _rafId: number | null = null;
 
     constructor() {
         this.setBoardElement();
@@ -24,29 +27,37 @@ export class UIRenderer {
         this.setGameOverScreenElements();
     }
 
-    public setBoardEventHandlers(game: Game) {
+    public setBoardEventHandlers(game: Game): void {
         this._boardElement.replaceWith(this._boardElement.cloneNode(true));
         this._boardElement = document.getElementById("board")!;
 
-        this._boardElement.addEventListener("click", (e: MouseEvent) => {
-            const target: HTMLElement = e.target as HTMLElement;
-            if (!target.classList.contains("tile")) return;
-            const row: number = Number(target.dataset.row);
-            const col: number = Number(target.dataset.col);
-            if (isNaN(row) || isNaN(col)) return;
-            if (game.status !== "playing") return;
-            if (!this._timerRunning) this.startTimer();
-            try {
-                game.reveal(row, col);
-            } catch (err) {
-                alert((err as Error).message);
-            }
-        });
+        this._boardElement.addEventListener("click", this.handleTileClick(game));
+        this._boardElement.addEventListener("contextmenu", this.handleTileRightClick(game));
+        this._boardElement.addEventListener("mousedown", this.handleTileMouseDown(game));
+        this._boardElement.addEventListener("mouseup", this.handleTileMouseUp(game));
+        this._boardElement.addEventListener("mouseleave", this.handleBoardMouseLeave);
+    }
 
-        this._boardElement.addEventListener("contextmenu", (e: MouseEvent) => {
-            const target: HTMLElement = e.target as HTMLElement;
-            if (!target.classList.contains("tile")) return;
-            e.preventDefault();
+    private handleTileClick = (game: Game) => debounce((e: MouseEvent): void => {
+        const target: HTMLElement = e.target as HTMLElement;
+        if (!target.classList.contains("tile")) return;
+        const row: number = Number(target.dataset.row);
+        const col: number = Number(target.dataset.col);
+        if (isNaN(row) || isNaN(col)) return;
+        if (game.status !== "playing") return;
+        if (!this._timerRunning) this.startTimer();
+        try {
+            game.reveal(row, col);
+        } catch (err) {
+            alert((err as Error).message);
+        }
+    }, 100);
+
+    private handleTileRightClick = (game: Game) => (e: MouseEvent): void => {
+        const target: HTMLElement = e.target as HTMLElement;
+        if (!target.classList.contains("tile")) return;
+        e.preventDefault();
+        debounce(() => {
             const row: number = Number(target.dataset.row);
             const col: number = Number(target.dataset.col);
             if (isNaN(row) || isNaN(col)) return;
@@ -56,40 +67,40 @@ export class UIRenderer {
             } catch (err) {
                 alert((err as Error).message);
             }
-        });
+        }, 100)();
+    };
 
-        this._boardElement.addEventListener("mousedown", (e: MouseEvent) => {
-            const target: HTMLElement = e.target as HTMLElement;
-            if (!target.classList.contains("tile")) return;
-            const row: number = Number(target.dataset.row);
-            const col: number = Number(target.dataset.col);
-            if (isNaN(row) || isNaN(col)) return;
-            const tile = game.getTile(row, col);
-            if (
-                tile.status === "revealed" &&
-                tile.adjacentBombCount > 0 &&
-                e.button === 0
-            ) {
-                this.handleHighlightNeighbors(e, tile, this._boardElement, game);
-            }
-        });
+    private handleTileMouseDown = (game: Game) => debounce((e: MouseEvent): void => {
+        const target: HTMLElement = e.target as HTMLElement;
+        if (!target.classList.contains("tile")) return;
+        const row: number = Number(target.dataset.row);
+        const col: number = Number(target.dataset.col);
+        if (isNaN(row) || isNaN(col)) return;
+        const tile: Tile = game.getTile(row, col);
+        if (
+            tile.status === "revealed" &&
+            tile.adjacentBombCount > 0 &&
+            e.button === 0
+        ) {
+            this.handleHighlightNeighbors(e, tile, this._boardElement, game);
+        }
+    }, 100);
 
-        this._boardElement.addEventListener("mouseup", (e: MouseEvent) => {
-            const target: HTMLElement = e.target as HTMLElement;
-            if (!target.classList.contains("tile")) return;
-            const row: number = Number(target.dataset.row);
-            const col: number = Number(target.dataset.col);
-            if (isNaN(row) || isNaN(col)) return;
-            const tile: Tile = game.getTile(row, col);
-            if (tile.status === "revealed" && tile.adjacentBombCount > 0) {
-                this.clearHighlights();
-            }
-        });
-
-        this._boardElement.addEventListener("mouseleave", (e: MouseEvent) => {
+    private handleTileMouseUp = (game: Game) => debounce((e: MouseEvent): void => {
+        const target: HTMLElement = e.target as HTMLElement;
+        if (!target.classList.contains("tile")) return;
+        const row: number = Number(target.dataset.row);
+        const col: number = Number(target.dataset.col);
+        if (isNaN(row) || isNaN(col)) return;
+        const tile: Tile = game.getTile(row, col);
+        if (tile.status === "revealed" && tile.adjacentBombCount > 0) {
             this.clearHighlights();
-        });
-    }
+        }
+    }, 100);
+
+    private handleBoardMouseLeave = debounce((e: MouseEvent): void => {
+        this.clearHighlights();
+    }, 100);
 
     private clearBoardEventHandlers(): void {
         const newBoard: HTMLElement = this._boardElement.cloneNode(true) as HTMLElement;
@@ -149,27 +160,46 @@ export class UIRenderer {
         this.updateTimerElement();
     }
 
+    public setElapsedTime(time: number): void {
+        this._elapsedTime = time;
+    }
+
+    public get elapsedTime(): number {
+        return this._elapsedTime;
+    }
+
     public renderBoard(game: Game): void {
         this.prepareBoardElement(this._boardElement, game);
         this._tileElements = [];
+        const fragment: DocumentFragment = document.createDocumentFragment();
 
         for (let row = 0; row < game.board.rows; row++) {
             const rowElements: HTMLElement[] = [];
             for (let col = 0; col < game.board.cols; col++) {
                 const tile: Tile = game.getTile(row, col);
                 const tileElement: HTMLElement = this.createTileElement(tile, row, col);
-                this._boardElement.appendChild(tileElement);
+                fragment.appendChild(tileElement);
                 rowElements.push(tileElement);
             }
             this._tileElements.push(rowElements);
         }
+        this._boardElement.appendChild(fragment);
     }
 
     public updateTile(game: Game, row: number, col: number): void {
-        const tile: Tile = game.getTile(row, col);
-        const tileElement: HTMLElement = this._tileElements?.[row]?.[col];
-        if (tileElement) {
-            this.applyTileState(tileElement, tile);
+        this._pendingTileUpdates.push({ row, col });
+        if (this._rafId === null) {
+            this._rafId = requestAnimationFrame(() => {
+                for (const { row, col } of this._pendingTileUpdates) {
+                    const tile: Tile = game.getTile(row, col);
+                    const tileElement: HTMLElement = this._tileElements?.[row]?.[col];
+                    if (tileElement) {
+                        this.applyTileState(tileElement, tile);
+                    }
+                }
+                this._pendingTileUpdates = [];
+                this._rafId = null;
+            });
         }
     }
 
@@ -186,22 +216,40 @@ export class UIRenderer {
         tileElement.textContent = "";
         tileElement.removeAttribute("data-value");
 
-        switch (tile.status) {
-            case "revealed":
-                tileElement.classList.add("revealed");
-                tileElement.textContent = tile.isBomb() ? this._bombIcon :
-                    tile.adjacentBombCount ? tile.adjacentBombCount.toString() : "";
-                tileElement.dataset.value = tile.adjacentBombCount.toString();
-                break;
-            case "flagged":
-                tileElement.classList.add("flagged");
-                tileElement.textContent = "🚩";
-                break;
-            case "wrong-flag":
-                tileElement.classList.add("wrong-flag");
-                tileElement.textContent = "❌";
-                break;
+        const handler: (tileElement: HTMLElement, tile: Tile) => void = this.tileStateHandlers[newState];
+        if (handler) {
+            handler(tileElement, tile);
         }
+    }
+
+    private tileStateHandlers: Record<TileStatus, (tileElement: HTMLElement, tile: Tile) => void> = {
+        "hidden": (tileElement, tile): void => this.applyHiddenState(tileElement),
+        "revealed": (tileElement, tile): void => this.applyRevealedState(tileElement, tile),
+        "flagged": (tileElement, tile): void => this.applyFlaggedState(tileElement),
+        "wrong-flag": (tileElement, tile): void => this.applyWrongFlagState(tileElement),
+    };
+
+    private applyHiddenState(tileElement: HTMLElement): void {
+        tileElement.classList.remove("revealed", "flagged", "wrong-flag");
+        tileElement.textContent = "";
+        tileElement.removeAttribute("data-value");
+    }
+
+    private applyRevealedState(tileElement: HTMLElement, tile: Tile): void {
+        tileElement.classList.add("revealed");
+        tileElement.textContent = tile.isBomb() ? this._bombIcon :
+            tile.adjacentBombCount ? tile.adjacentBombCount.toString() : "";
+        tileElement.dataset.value = tile.adjacentBombCount.toString();
+    }
+
+    private applyFlaggedState(tileElement: HTMLElement): void {
+        tileElement.classList.add("flagged");
+        tileElement.textContent = "🚩";
+    }
+
+    private applyWrongFlagState(tileElement: HTMLElement): void {
+        tileElement.classList.add("wrong-flag");
+        tileElement.textContent = "❌";
     }
 
     private prepareBoardElement(boardElement: HTMLElement, game: Game): void {
@@ -260,6 +308,19 @@ export class UIRenderer {
                 this.updateTile(game, row, col);
             }
         }
+        this.flushPendingTileUpdates(game);
+    }
+
+    private flushPendingTileUpdates(game: Game): void {
+        for (const { row, col } of this._pendingTileUpdates) {
+            const tile: Tile = game.getTile(row, col);
+            const tileElement: HTMLElement = this._tileElements?.[row]?.[col];
+            if (tileElement) {
+                this.applyTileState(tileElement, tile);
+            }
+        }
+        this._pendingTileUpdates = [];
+        this._rafId = null;
     }
 
     private setGameOverScreenElements(): void {
