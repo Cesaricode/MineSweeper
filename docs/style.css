@@ -189,7 +189,7 @@ h1 {
     transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.tile:hover:not(.revealed):not(.flagged) {
+.tile:hover:not(.revealed):not(.flagged):not(.tile.pressed):not(.tile.flag-pressed) {
     background-color: var(--color-tile-hover);
 }
 
