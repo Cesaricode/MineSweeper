@@ -389,6 +389,7 @@ export class UIRenderer {
     public endGame(game: Game): void {
         this.stopTimer();
         this.renderEndBoard(game);
+        this.updateBombCount(game);
         this.clearBoardEventHandlers();
     }
 

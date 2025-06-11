@@ -333,6 +333,7 @@ export class UIRenderer {
     endGame(game) {
         this.stopTimer();
         this.renderEndBoard(game);
+        this.updateBombCount(game);
         this.clearBoardEventHandlers();
     }
     renderEndBoard(game) {
