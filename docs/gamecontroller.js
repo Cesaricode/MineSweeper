@@ -153,16 +153,25 @@ export class GameController {
         this.handleSoundToggleClick(btn);
     }
     startGameFromSettings() {
+        var _a;
         this._ui.reset();
+        (_a = this._game) === null || _a === void 0 ? void 0 : _a.timer.resetTimer();
         const rows = Number(document.getElementById("rows").value);
         const cols = Number(document.getElementById("cols").value);
         const difficulty = document.getElementById("difficulty").value;
         this._game = new Game(rows, cols, difficulty);
+        this.setupTimerCallback();
         this.setGameEventListeners();
         this.applyThemeConfig();
         this._ui.setBoardEventHandlers(this._game);
         this._ui.renderBoard(this._game);
         this._ui.updateBombCount(this._game);
+    }
+    setupTimerCallback() {
+        var _a;
+        (_a = this._game) === null || _a === void 0 ? void 0 : _a.timer.onTick((elapsed) => {
+            this._ui.updateTimerElement(elapsed);
+        });
     }
     setGameEventListeners() {
         if (!this._game)
@@ -193,7 +202,7 @@ export class GameController {
     saveGame() {
         if (!this._game || this._game.status !== "playing" || !this._game.board.bombsDeployed)
             return;
-        const elapsedTime = this._ui.elapsedTime + 1000;
+        const elapsedTime = this._game.timer.elapsedTime + 1000;
         const state = {
             rows: this._game.board.rows,
             cols: this._game.board.cols,
@@ -226,8 +235,10 @@ export class GameController {
         this._game = game;
         this.setGameEventListeners();
         this.applyThemeConfig();
-        this._ui.setElapsedTime(state.elapsedTime);
-        this._ui.startTimer();
+        this._game.timer.setElapsedTime(state.elapsedTime);
+        this._game.timer.startTimer();
+        this.setupTimerCallback();
+        this._ui.updateTimerElement(state.elapsedTime);
         this._ui.setBoardEventHandlers(this._game);
         this._ui.renderBoard(this._game);
         this._ui.updateBombCount(this._game);

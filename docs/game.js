@@ -1,6 +1,7 @@
 import { Board } from "./board.js";
 import { difficultyBombRange, getBombCount } from "./difficulty.js";
 import { directions } from "./util.js";
+import { GameTimer } from "./gametimer.js";
 export class Game extends EventTarget {
     constructor(rows, cols, difficulty) {
         super();
@@ -13,11 +14,13 @@ export class Game extends EventTarget {
         this.difficulty = difficulty;
         const bombCount = this.calculateBombCount(rows, cols, difficulty);
         this._board = new Board(rows, cols, bombCount);
+        this._timer = new GameTimer();
         this._tilesToReveal = rows * cols - bombCount;
     }
     reveal(row, col) {
         this.assertPlaying();
         this.ensureBombsDeployed(row, col);
+        this._timer.startTimer();
         const tile = this._board.getTile(row, col);
         if (tile.isFlagged()) {
             return;
@@ -81,7 +84,7 @@ export class Game extends EventTarget {
                 this.pushUnvisitedNeighbors(stack, visited, r, c);
             }
         }
-        this.handleSuccesfulFloodReveal(revealed);
+        this.handleSuccessfulFloodReveal(revealed);
     }
     createFloodStack(row, col) {
         return [[row, col]];
@@ -112,6 +115,7 @@ export class Game extends EventTarget {
         this._status = "lost";
         this._board.revealBombs();
         this._board.revealIncorrectFlags();
+        this._timer.stopTimer();
         this.dispatchEvent(new CustomEvent("gameLost"));
     }
     toggleFlag(row, col) {
@@ -133,6 +137,9 @@ export class Game extends EventTarget {
     }
     get board() {
         return this._board;
+    }
+    get timer() {
+        return this._timer;
     }
     get tilesToReveal() {
         return this._tilesToReveal;
@@ -158,10 +165,11 @@ export class Game extends EventTarget {
         if (this._tilesToReveal === 0) {
             this._status = "won";
             this.flagRemainingBombs();
+            this._timer.stopTimer();
             this.dispatchEvent(new CustomEvent("gameWon"));
         }
     }
-    handleSuccesfulFloodReveal(revealed) {
+    handleSuccessfulFloodReveal(revealed) {
         this._tilesToReveal -= revealed.length;
         this.dispatchEvent(new CustomEvent("floodTilesRevealed", {
             detail: { tiles: revealed }
@@ -169,6 +177,7 @@ export class Game extends EventTarget {
         if (this._tilesToReveal === 0) {
             this._status = "won";
             this.flagRemainingBombs();
+            this._timer.stopTimer();
             this.dispatchEvent(new CustomEvent("gameWon"));
         }
     }

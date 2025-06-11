@@ -116,6 +116,7 @@ export class GameController {
 
     private startGameFromSettings(): void {
         this._ui.reset();
+        this._game?.timer.resetTimer();
 
         const rows: number = Number((document.getElementById("rows") as HTMLInputElement).value);
         const cols: number = Number((document.getElementById("cols") as HTMLInputElement).value);
@@ -123,11 +124,19 @@ export class GameController {
 
         this._game = new Game(rows, cols, difficulty);
 
+
+        this.setupTimerCallback();
         this.setGameEventListeners();
         this.applyThemeConfig();
         this._ui.setBoardEventHandlers(this._game);
         this._ui.renderBoard(this._game);
         this._ui.updateBombCount(this._game);
+    }
+
+    private setupTimerCallback(): void {
+        this._game?.timer.onTick((elapsed) => {
+            this._ui.updateTimerElement(elapsed);
+        });
     }
 
     private handleTileRevealed = (e: Event): void => {
@@ -213,7 +222,7 @@ export class GameController {
 
     private saveGame(): void {
         if (!this._game || this._game.status !== "playing" || !this._game.board.bombsDeployed) return;
-        const elapsedTime: number = this._ui.elapsedTime + 1000;
+        const elapsedTime: number = this._game.timer.elapsedTime + 1000;
         const state: SavedGameState = {
             rows: this._game!.board.rows,
             cols: this._game!.board.cols,
@@ -249,8 +258,10 @@ export class GameController {
         this.setGameEventListeners();
         this.applyThemeConfig();
 
-        this._ui.setElapsedTime(state.elapsedTime);
-        this._ui.startTimer();
+        this._game.timer.setElapsedTime(state.elapsedTime);
+        this._game.timer.startTimer();
+        this.setupTimerCallback();
+        this._ui.updateTimerElement(state.elapsedTime);
         this._ui.setBoardEventHandlers(this._game);
         this._ui.renderBoard(this._game);
         this._ui.updateBombCount(this._game);

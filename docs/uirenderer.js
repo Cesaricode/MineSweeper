@@ -2,10 +2,6 @@ import { debounce } from "./util.js";
 export class UIRenderer {
     constructor() {
         this._tileElements = [];
-        this._timerIntervalId = null;
-        this._startTime = 0;
-        this._elapsedTime = 0;
-        this._timerRunning = false;
         this._bombIcon = "💣";
         this._pendingTileUpdates = [];
         this._rafId = null;
@@ -59,8 +55,6 @@ export class UIRenderer {
             if (this._longPressTriggered) {
                 return;
             }
-            if (!this._timerRunning)
-                this.startTimer();
             game.reveal(row, col);
             this._touchStartPos = null;
         };
@@ -126,8 +120,6 @@ export class UIRenderer {
                 Number(target.dataset.col) === col;
             const withinThreshold = (now - time) < this._cancelThreshold;
             if ((isSameTile || withinThreshold) && !this._actionCanceled) {
-                if (!this._timerRunning)
-                    this.startTimer();
                 game.reveal(row, col);
             }
             this.clearHighlights();
@@ -188,8 +180,6 @@ export class UIRenderer {
             if (isSameTile || withinThreshold) {
                 if (game.status !== "playing")
                     return;
-                if (!this._timerRunning)
-                    this.startTimer();
                 try {
                     game.toggleFlag(row, col);
                 }
@@ -276,38 +266,9 @@ export class UIRenderer {
     updateBombCount(game) {
         this._bombCountElement.textContent = (game.board.bombCount - game.board.flagCount).toString();
     }
-    updateTimerElement() {
-        const seconds = Math.floor(this._elapsedTime / 1000);
+    updateTimerElement(elapsedTime) {
+        const seconds = Math.floor(elapsedTime / 1000);
         this._timerElement.textContent = seconds.toString().padStart(3, '0');
-    }
-    startTimer() {
-        if (this._timerRunning)
-            return;
-        this.updateTimerElement();
-        this._startTime = Date.now() - this._elapsedTime;
-        this._timerRunning = true;
-        this._timerIntervalId = window.setInterval(() => {
-            this._elapsedTime = Date.now() - this._startTime;
-            this.updateTimerElement();
-        }, 1000);
-    }
-    stopTimer() {
-        if (this._timerIntervalId !== null) {
-            window.clearInterval(this._timerIntervalId);
-            this._timerIntervalId = null;
-            this._timerRunning = false;
-        }
-    }
-    resetTimer() {
-        this.stopTimer();
-        this._elapsedTime = 0;
-        this.updateTimerElement();
-    }
-    setElapsedTime(time) {
-        this._elapsedTime = time;
-    }
-    get elapsedTime() {
-        return this._elapsedTime;
     }
     renderBoard(game) {
         this.prepareBoardElement(this._boardElement, game);
@@ -414,7 +375,6 @@ export class UIRenderer {
         this._bombIcon = icon;
     }
     endGame(game) {
-        this.stopTimer();
         this.renderEndBoard(game);
         this.forcePendingTileUpdates(game);
         this.updateBombCount(game);
@@ -489,7 +449,6 @@ export class UIRenderer {
         this._closeButtonElement.onclick = callback;
     }
     reset() {
-        this.resetTimer();
         this._tileElements = [];
     }
 }
