@@ -30,6 +30,9 @@ export class Game extends EventTarget {
             this.chordReveal(tile);
             return;
         }
+        if (tile.status === "revealed") {
+            return;
+        }
         if (tile.adjacentBombCount === 0) {
             this.floodReveal(row, col);
         }

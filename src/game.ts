@@ -49,6 +49,10 @@ export class Game extends EventTarget {
             return;
         }
 
+        if (tile.status === "revealed") {
+            return;
+        }
+
         if (tile.adjacentBombCount === 0) {
             this.floodReveal(row, col);
         } else {
