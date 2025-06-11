@@ -19,6 +19,20 @@ export class GameController {
             this._ui.updateBombCount(this._game);
             this.saveGame();
         };
+        this.handleFloodTilesRevealed = (e) => {
+            this._soundManager.playTileClick();
+            const detail = e.detail;
+            if (detail && Array.isArray(detail.tiles) && detail.tiles.length > 0) {
+                detail.tiles.forEach(tile => {
+                    this._ui.updateTile(this._game, tile.row, tile.col);
+                });
+            }
+            else {
+                this._ui.renderBoard(this._game);
+            }
+            this._ui.updateBombCount(this._game);
+            this.saveGame();
+        };
         this.handleFlagToggled = (e) => {
             this._soundManager.playFlag();
             const detail = e.detail;
@@ -154,6 +168,7 @@ export class GameController {
         if (!this._game)
             throw new Error("Cannot set game event listeners - missing game");
         this._game.addEventListener("tileRevealed", this.handleTileRevealed);
+        this._game.addEventListener("floodTilesRevealed", this.handleFloodTilesRevealed);
         this._game.addEventListener("flagToggled", this.handleFlagToggled);
         this._game.addEventListener("gameWon", this.handleGameWon);
         this._game.addEventListener("gameLost", this.handleGameLost);

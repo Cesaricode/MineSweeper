@@ -83,44 +83,55 @@ export class Game extends EventTarget {
         }
     }
 
-    private getUnvisitedNeighbors(r: number, c: number, visited: Set<string>): [number, number][] {
-        const result: [number, number][] = [];
-        for (const [dr, dc] of directions) {
-            const nr: number = r + dr;
-            const nc: number = c + dc;
-            if (isInBounds(nr, nc, this.rows, this.cols) && !visited.has(`${nr},${nc}`)) {
-                result.push([nr, nc]);
-            }
-        }
-        return result;
-    }
-
     private floodReveal(row: number, col: number): void {
-        const stack: [number, number][] = [[row, col]];
-        const visited = new Set<string>();
+        const stack: [number, number][] = this.createFloodStack(row, col);
+        const visited: boolean[][] = this.createVisitedArray();
+        const revealed: { row: number, col: number; }[] = [];
 
         while (stack.length) {
             const [r, c] = stack.pop()!;
-            const key: string = `${r},${c}`;
-            if (visited.has(key)) continue;
-            visited.add(key);
+            if (visited[r][c]) continue;
+            visited[r][c] = true;
             const tile: Tile = this._board.getTile(r, c);
             if (tile.status !== "hidden") continue;
-            this.floodRevealTile(tile);
+            this.floodRevealTile(tile, revealed);
 
             if (tile.adjacentBombCount === 0) {
-                stack.push(...this.getUnvisitedNeighbors(r, c, visited));
+                this.pushUnvisitedNeighbors(stack, visited, r, c);
+            }
+        }
+        this.handleSuccesfulFloodReveal(revealed);
+    }
+
+    private createFloodStack(row: number, col: number): [number, number][] {
+        return [[row, col]];
+    }
+
+    private createVisitedArray(): boolean[][] {
+        return Array.from({ length: this.rows }, () => Array(this.cols).fill(false));
+    }
+
+    private pushUnvisitedNeighbors(stack: [number, number][], visited: boolean[][], r: number, c: number): void {
+        for (const [dr, dc] of directions) {
+            const nr: number = r + dr;
+            const nc: number = c + dc;
+            if (
+                nr >= 0 && nr < this.rows &&
+                nc >= 0 && nc < this.cols &&
+                !visited[nr][nc]
+            ) {
+                stack.push([nr, nc]);
             }
         }
     }
 
-    private floodRevealTile(tile: Tile): void {
+    private floodRevealTile(tile: Tile, revealed: { row: number, col: number; }[]): void {
         this.assertHidden(tile);
         if (tile.isBomb()) {
             return;
         }
         tile.reveal();
-        this.handleSuccessfulReveal(tile.row, tile.col);
+        revealed.push({ row: tile.row, col: tile.col });
     }
 
     private triggerBomb(): void {
@@ -185,6 +196,19 @@ export class Game extends EventTarget {
             this.dispatchEvent(new CustomEvent("gameWon"));
         }
     }
+
+    private handleSuccesfulFloodReveal(revealed: { row: number, col: number; }[]): void {
+        this._tilesToReveal -= revealed.length;
+        this.dispatchEvent(new CustomEvent<{ tiles: { row: number, col: number; }[]; }>("floodTilesRevealed", {
+            detail: { tiles: revealed }
+        }));
+        if (this._tilesToReveal === 0) {
+            this._status = "won";
+            this.flagRemainingBombs();
+            this.dispatchEvent(new CustomEvent("gameWon"));
+        }
+    }
+
 
     private flagRemainingBombs(): void {
         this._board.forEachTile(tile => {

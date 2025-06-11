@@ -333,6 +333,7 @@ export class UIRenderer {
     endGame(game) {
         this.stopTimer();
         this.renderEndBoard(game);
+        this.forcePendingTileUpdates(game);
         this.updateBombCount(game);
         this.clearBoardEventHandlers();
     }
@@ -345,16 +346,36 @@ export class UIRenderer {
         this.flushPendingTileUpdates(game);
     }
     flushPendingTileUpdates(game) {
+        const batchSize = 50;
+        const processBatch = () => {
+            var _a, _b;
+            for (let i = 0; i < batchSize && this._pendingTileUpdates.length; i++) {
+                const { row, col } = this._pendingTileUpdates.shift();
+                const tile = game.getTile(row, col);
+                const tileElement = (_b = (_a = this._tileElements) === null || _a === void 0 ? void 0 : _a[row]) === null || _b === void 0 ? void 0 : _b[col];
+                if (tileElement) {
+                    this.applyTileState(tileElement, tile);
+                }
+            }
+            if (this._pendingTileUpdates.length) {
+                requestAnimationFrame(processBatch);
+            }
+            else {
+                this._rafId = null;
+            }
+        };
+        processBatch();
+    }
+    forcePendingTileUpdates(game) {
         var _a, _b;
-        for (const { row, col } of this._pendingTileUpdates) {
+        while (this._pendingTileUpdates.length > 0) {
+            const { row, col } = this._pendingTileUpdates.shift();
             const tile = game.getTile(row, col);
             const tileElement = (_b = (_a = this._tileElements) === null || _a === void 0 ? void 0 : _a[row]) === null || _b === void 0 ? void 0 : _b[col];
             if (tileElement) {
                 this.applyTileState(tileElement, tile);
             }
         }
-        this._pendingTileUpdates = [];
-        this._rafId = null;
     }
     setGameOverScreenElements() {
         const screen = document.getElementById("game-over-screen");

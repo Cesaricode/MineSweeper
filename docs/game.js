@@ -1,6 +1,5 @@
 import { Board } from "./board.js";
 import { difficultyBombRange, getBombCount } from "./difficulty.js";
-import { isInBounds } from "./util.js";
 import { directions } from "./util.js";
 export class Game extends EventTarget {
     constructor(rows, cols, difficulty) {
@@ -62,42 +61,49 @@ export class Game extends EventTarget {
             this._isFirstMove = false;
         }
     }
-    getUnvisitedNeighbors(r, c, visited) {
-        const result = [];
-        for (const [dr, dc] of directions) {
-            const nr = r + dr;
-            const nc = c + dc;
-            if (isInBounds(nr, nc, this.rows, this.cols) && !visited.has(`${nr},${nc}`)) {
-                result.push([nr, nc]);
-            }
-        }
-        return result;
-    }
     floodReveal(row, col) {
-        const stack = [[row, col]];
-        const visited = new Set();
+        const stack = this.createFloodStack(row, col);
+        const visited = this.createVisitedArray();
+        const revealed = [];
         while (stack.length) {
             const [r, c] = stack.pop();
-            const key = `${r},${c}`;
-            if (visited.has(key))
+            if (visited[r][c])
                 continue;
-            visited.add(key);
+            visited[r][c] = true;
             const tile = this._board.getTile(r, c);
             if (tile.status !== "hidden")
                 continue;
-            this.floodRevealTile(tile);
+            this.floodRevealTile(tile, revealed);
             if (tile.adjacentBombCount === 0) {
-                stack.push(...this.getUnvisitedNeighbors(r, c, visited));
+                this.pushUnvisitedNeighbors(stack, visited, r, c);
+            }
+        }
+        this.handleSuccesfulFloodReveal(revealed);
+    }
+    createFloodStack(row, col) {
+        return [[row, col]];
+    }
+    createVisitedArray() {
+        return Array.from({ length: this.rows }, () => Array(this.cols).fill(false));
+    }
+    pushUnvisitedNeighbors(stack, visited, r, c) {
+        for (const [dr, dc] of directions) {
+            const nr = r + dr;
+            const nc = c + dc;
+            if (nr >= 0 && nr < this.rows &&
+                nc >= 0 && nc < this.cols &&
+                !visited[nr][nc]) {
+                stack.push([nr, nc]);
             }
         }
     }
-    floodRevealTile(tile) {
+    floodRevealTile(tile, revealed) {
         this.assertHidden(tile);
         if (tile.isBomb()) {
             return;
         }
         tile.reveal();
-        this.handleSuccessfulReveal(tile.row, tile.col);
+        revealed.push({ row: tile.row, col: tile.col });
     }
     triggerBomb() {
         this._status = "lost";
@@ -145,6 +151,17 @@ export class Game extends EventTarget {
         this._tilesToReveal--;
         this.dispatchEvent(new CustomEvent("tileRevealed", {
             detail: { row, col }
+        }));
+        if (this._tilesToReveal === 0) {
+            this._status = "won";
+            this.flagRemainingBombs();
+            this.dispatchEvent(new CustomEvent("gameWon"));
+        }
+    }
+    handleSuccesfulFloodReveal(revealed) {
+        this._tilesToReveal -= revealed.length;
+        this.dispatchEvent(new CustomEvent("floodTilesRevealed", {
+            detail: { tiles: revealed }
         }));
         if (this._tilesToReveal === 0) {
             this._status = "won";

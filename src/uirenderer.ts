@@ -389,6 +389,7 @@ export class UIRenderer {
     public endGame(game: Game): void {
         this.stopTimer();
         this.renderEndBoard(game);
+        this.forcePendingTileUpdates(game);
         this.updateBombCount(game);
         this.clearBoardEventHandlers();
     }
@@ -403,15 +404,34 @@ export class UIRenderer {
     }
 
     private flushPendingTileUpdates(game: Game): void {
-        for (const { row, col } of this._pendingTileUpdates) {
+        const batchSize: number = 50;
+        const processBatch = () => {
+            for (let i = 0; i < batchSize && this._pendingTileUpdates.length; i++) {
+                const { row, col } = this._pendingTileUpdates.shift()!;
+                const tile: Tile = game.getTile(row, col);
+                const tileElement: HTMLElement = this._tileElements?.[row]?.[col];
+                if (tileElement) {
+                    this.applyTileState(tileElement, tile);
+                }
+            }
+            if (this._pendingTileUpdates.length) {
+                requestAnimationFrame(processBatch);
+            } else {
+                this._rafId = null;
+            }
+        };
+        processBatch();
+    }
+
+    private forcePendingTileUpdates(game: Game): void {
+        while (this._pendingTileUpdates.length > 0) {
+            const { row, col } = this._pendingTileUpdates.shift()!;
             const tile: Tile = game.getTile(row, col);
             const tileElement: HTMLElement = this._tileElements?.[row]?.[col];
             if (tileElement) {
                 this.applyTileState(tileElement, tile);
             }
         }
-        this._pendingTileUpdates = [];
-        this._rafId = null;
     }
 
     private setGameOverScreenElements(): void {
