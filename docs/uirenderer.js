@@ -20,7 +20,6 @@ export class UIRenderer {
         this._touchStartPos = null;
         this._touchMoveThreshold = 10;
         this.handleTileTouchStart = (game) => (e) => {
-            e.preventDefault();
             if (e.touches.length !== 1)
                 return;
             const touch = e.touches[0];
@@ -35,10 +34,13 @@ export class UIRenderer {
             this._pressedTile = { row, col, time: Date.now() };
             target.classList.add("pressed");
             this._longPressTriggered = false;
+            this._actionCanceled = false;
             this._longPressTimeout = window.setTimeout(() => {
-                this._longPressTriggered = true;
-                target.classList.remove("pressed");
-                game.toggleFlag(row, col);
+                if (!this._actionCanceled) {
+                    this._longPressTriggered = true;
+                    target.classList.remove("pressed");
+                    game.toggleFlag(row, col);
+                }
             }, this._longPressDuration);
         };
         this.handleTileTouchEnd = (game) => (e) => {
@@ -46,8 +48,11 @@ export class UIRenderer {
                 clearTimeout(this._longPressTimeout);
                 this._longPressTimeout = null;
             }
-            if (!this._pressedTile)
+            if (!this._pressedTile || this._actionCanceled) {
+                this._pressedTile = null;
+                this._actionCanceled = false;
                 return;
+            }
             const { row, col } = this._pressedTile;
             this._pressedTile = null;
             document.querySelectorAll(".tile.pressed").forEach(el => el.classList.remove("pressed"));
@@ -70,6 +75,7 @@ export class UIRenderer {
                     clearTimeout(this._longPressTimeout);
                     this._longPressTimeout = null;
                 }
+                this._actionCanceled = true;
                 this._pressedTile = null;
                 document.querySelectorAll(".tile.pressed").forEach(el => el.classList.remove("pressed"));
             }

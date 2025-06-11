@@ -61,7 +61,6 @@ export class UIRenderer {
     }
 
     private handleTileTouchStart = (game: Game) => (e: TouchEvent): void => {
-        e.preventDefault();
         if (e.touches.length !== 1) return;
         const touch: Touch = e.touches[0];
         this._touchStartPos = { x: touch.clientX, y: touch.clientY };
@@ -74,10 +73,13 @@ export class UIRenderer {
         target.classList.add("pressed");
 
         this._longPressTriggered = false;
+        this._actionCanceled = false;
         this._longPressTimeout = window.setTimeout(() => {
-            this._longPressTriggered = true;
-            target.classList.remove("pressed");
-            game.toggleFlag(row, col);
+            if (!this._actionCanceled) {
+                this._longPressTriggered = true;
+                target.classList.remove("pressed");
+                game.toggleFlag(row, col);
+            }
         }, this._longPressDuration);
     };
 
@@ -86,7 +88,11 @@ export class UIRenderer {
             clearTimeout(this._longPressTimeout);
             this._longPressTimeout = null;
         }
-        if (!this._pressedTile) return;
+        if (!this._pressedTile || this._actionCanceled) {
+            this._pressedTile = null;
+            this._actionCanceled = false;
+            return;
+        }
         const { row, col } = this._pressedTile;
         this._pressedTile = null;
         document.querySelectorAll(".tile.pressed").forEach(el => el.classList.remove("pressed"));
@@ -108,6 +114,7 @@ export class UIRenderer {
                 clearTimeout(this._longPressTimeout);
                 this._longPressTimeout = null;
             }
+            this._actionCanceled = true;
             this._pressedTile = null;
             document.querySelectorAll(".tile.pressed").forEach(el => el.classList.remove("pressed"));
         }
