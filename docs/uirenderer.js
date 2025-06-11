@@ -14,6 +14,52 @@ export class UIRenderer {
         this._cancelTimerId = null;
         this._cancelThreshold = 150;
         this._actionCanceled = false;
+        this._longPressTimeout = null;
+        this._longPressTriggered = false;
+        this._longPressDuration = 400;
+        this.handleTileTouchStart = (game) => (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (!target || !target.classList.contains("tile"))
+                return;
+            const row = Number(target.dataset.row);
+            const col = Number(target.dataset.col);
+            if (isNaN(row) || isNaN(col))
+                return;
+            this._pressedTile = { row, col, time: Date.now() };
+            target.classList.add("pressed");
+            this._longPressTriggered = false;
+            this._longPressTimeout = window.setTimeout(() => {
+                this._longPressTriggered = true;
+                target.classList.remove("pressed");
+                game.toggleFlag(row, col);
+            }, this._longPressDuration);
+        };
+        this.handleTileTouchEnd = (game) => (e) => {
+            e.preventDefault();
+            if (this._longPressTimeout) {
+                clearTimeout(this._longPressTimeout);
+                this._longPressTimeout = null;
+            }
+            if (!this._pressedTile)
+                return;
+            const { row, col } = this._pressedTile;
+            this._pressedTile = null;
+            document.querySelectorAll(".tile.pressed").forEach(el => el.classList.remove("pressed"));
+            if (this._longPressTriggered) {
+                return;
+            }
+            if (!this._timerRunning)
+                this.startTimer();
+            game.reveal(row, col);
+        };
+        this.handleTileTouchContextMenu = (e) => {
+            const target = e.target;
+            if (target.classList.contains("tile")) {
+                e.preventDefault();
+            }
+        };
         this.handleTilePointerDown = (game) => (e) => {
             if (e.button !== 0)
                 return;
@@ -151,14 +197,22 @@ export class UIRenderer {
     setBoardEventHandlers(game) {
         this._boardElement.replaceWith(this._boardElement.cloneNode(true));
         this._boardElement = document.getElementById("board");
-        this._boardElement.addEventListener("pointerdown", this.handleTilePointerDown(game));
-        this._boardElement.addEventListener("pointerup", this.handleTilePointerUp(game));
-        this._boardElement.addEventListener("pointerdown", this.handleTileRightPointerDown);
-        this._boardElement.addEventListener("pointerup", this.handleTileRightPointerUp(game));
-        this._boardElement.addEventListener("pointerleave", this.handleTilePointerLeave);
-        this._boardElement.addEventListener("pointerenter", this.handleTilePointerEnter);
-        this._boardElement.addEventListener("mouseleave", this.handleBoardMouseLeave);
-        this._boardElement.addEventListener("contextmenu", this.handleTileContextMenu);
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (isTouchDevice) {
+            this._boardElement.addEventListener("touchstart", this.handleTileTouchStart(game), { passive: false });
+            this._boardElement.addEventListener("touchend", this.handleTileTouchEnd(game), { passive: false });
+            this._boardElement.addEventListener("contextmenu", this.handleTileTouchContextMenu);
+        }
+        else {
+            this._boardElement.addEventListener("pointerdown", this.handleTilePointerDown(game));
+            this._boardElement.addEventListener("pointerup", this.handleTilePointerUp(game));
+            this._boardElement.addEventListener("pointerdown", this.handleTileRightPointerDown);
+            this._boardElement.addEventListener("pointerup", this.handleTileRightPointerUp(game));
+            this._boardElement.addEventListener("pointerleave", this.handleTilePointerLeave);
+            this._boardElement.addEventListener("pointerenter", this.handleTilePointerEnter);
+            this._boardElement.addEventListener("mouseleave", this.handleBoardMouseLeave);
+            this._boardElement.addEventListener("contextmenu", this.handleTileContextMenu);
+        }
     }
     clearPressed() {
         document.querySelectorAll(".tile.pressed").forEach(element => {
