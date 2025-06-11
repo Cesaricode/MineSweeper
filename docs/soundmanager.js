@@ -1,6 +1,6 @@
 export class SoundManager {
     constructor() {
-        this._tileClickSound = new Audio("./sounds/tileclicksound.flac");
+        this._tileClickSound = new Audio("./sounds/tileclicksound.wav");
         this._bombClickSound = new Audio("./sounds/bombsound.wav");
         this._victorySound = new Audio("./sounds/victorysound.wav");
         this._flagSound = new Audio("./sounds/flagsound.wav");
@@ -15,7 +15,7 @@ export class SoundManager {
     playTileClick() {
         if (this._muted)
             return;
-        this._tileClickSound.currentTime = 0;
+        this._tileClickSound.currentTime = 0.06;
         this._tileClickSound.play().catch(() => { });
     }
     playBomb() {

@@ -1,5 +1,5 @@
 export class SoundManager {
-    private _tileClickSound: HTMLAudioElement = new Audio("./sounds/tileclicksound.flac");
+    private _tileClickSound: HTMLAudioElement = new Audio("./sounds/tileclicksound.wav");
     private _bombClickSound: HTMLAudioElement = new Audio("./sounds/bombsound.wav");
     private _victorySound: HTMLAudioElement = new Audio("./sounds/victorysound.wav");
     private _flagSound: HTMLAudioElement = new Audio("./sounds/flagsound.wav");
@@ -15,7 +15,7 @@ export class SoundManager {
 
     public playTileClick(): void {
         if (this._muted) return;
-        this._tileClickSound.currentTime = 0;
+        this._tileClickSound.currentTime = 0.06;
         this._tileClickSound.play().catch(() => { });
     }
 
