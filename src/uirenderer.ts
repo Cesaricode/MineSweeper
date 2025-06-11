@@ -92,6 +92,7 @@ export class UIRenderer {
         const withinThreshold: boolean = (now - time) < this._cancelThreshold;
 
         if ((isSameTile || withinThreshold) && !this._actionCanceled) {
+            if (!this._timerRunning) this.startTimer();
             game.reveal(row, col);
         }
         this.clearHighlights();

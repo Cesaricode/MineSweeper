@@ -54,6 +54,8 @@ export class UIRenderer {
                 Number(target.dataset.col) === col;
             const withinThreshold = (now - time) < this._cancelThreshold;
             if ((isSameTile || withinThreshold) && !this._actionCanceled) {
+                if (!this._timerRunning)
+                    this.startTimer();
                 game.reveal(row, col);
             }
             this.clearHighlights();
