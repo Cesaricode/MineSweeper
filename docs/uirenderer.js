@@ -17,9 +17,14 @@ export class UIRenderer {
         this._longPressTimeout = null;
         this._longPressTriggered = false;
         this._longPressDuration = 400;
+        this._touchStartPos = null;
+        this._touchMoveThreshold = 10;
         this.handleTileTouchStart = (game) => (e) => {
             e.preventDefault();
+            if (e.touches.length !== 1)
+                return;
             const touch = e.touches[0];
+            this._touchStartPos = { x: touch.clientX, y: touch.clientY };
             const target = document.elementFromPoint(touch.clientX, touch.clientY);
             if (!target || !target.classList.contains("tile"))
                 return;
@@ -37,7 +42,6 @@ export class UIRenderer {
             }, this._longPressDuration);
         };
         this.handleTileTouchEnd = (game) => (e) => {
-            e.preventDefault();
             if (this._longPressTimeout) {
                 clearTimeout(this._longPressTimeout);
                 this._longPressTimeout = null;
@@ -53,6 +57,22 @@ export class UIRenderer {
             if (!this._timerRunning)
                 this.startTimer();
             game.reveal(row, col);
+            this._touchStartPos = null;
+        };
+        this.handleTileTouchMove = (e) => {
+            if (!this._touchStartPos)
+                return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - this._touchStartPos.x;
+            const dy = touch.clientY - this._touchStartPos.y;
+            if (Math.abs(dx) > this._touchMoveThreshold || Math.abs(dy) > this._touchMoveThreshold) {
+                if (this._longPressTimeout) {
+                    clearTimeout(this._longPressTimeout);
+                    this._longPressTimeout = null;
+                }
+                this._pressedTile = null;
+                document.querySelectorAll(".tile.pressed").forEach(el => el.classList.remove("pressed"));
+            }
         };
         this.handleTileTouchContextMenu = (e) => {
             const target = e.target;
@@ -201,6 +221,7 @@ export class UIRenderer {
         if (isTouchDevice) {
             this._boardElement.addEventListener("touchstart", this.handleTileTouchStart(game), { passive: false });
             this._boardElement.addEventListener("touchend", this.handleTileTouchEnd(game), { passive: false });
+            this._boardElement.addEventListener("touchmove", this.handleTileTouchMove, { passive: false });
             this._boardElement.addEventListener("contextmenu", this.handleTileTouchContextMenu);
         }
         else {

@@ -27,6 +27,8 @@ export class UIRenderer {
     private _longPressTimeout: number | null = null;
     private _longPressTriggered: boolean = false;
     private _longPressDuration: number = 400;
+    private _touchStartPos: { x: number, y: number; } | null = null;
+    private _touchMoveThreshold = 10;
 
     constructor() {
         this.setBoardElement();
@@ -44,6 +46,7 @@ export class UIRenderer {
         if (isTouchDevice) {
             this._boardElement.addEventListener("touchstart", this.handleTileTouchStart(game), { passive: false });
             this._boardElement.addEventListener("touchend", this.handleTileTouchEnd(game), { passive: false });
+            this._boardElement.addEventListener("touchmove", this.handleTileTouchMove, { passive: false });
             this._boardElement.addEventListener("contextmenu", this.handleTileTouchContextMenu);
         } else {
             this._boardElement.addEventListener("pointerdown", this.handleTilePointerDown(game));
@@ -59,7 +62,9 @@ export class UIRenderer {
 
     private handleTileTouchStart = (game: Game) => (e: TouchEvent): void => {
         e.preventDefault();
+        if (e.touches.length !== 1) return;
         const touch: Touch = e.touches[0];
+        this._touchStartPos = { x: touch.clientX, y: touch.clientY };
         const target: HTMLElement = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
         if (!target || !target.classList.contains("tile")) return;
         const row: number = Number(target.dataset.row);
@@ -77,7 +82,6 @@ export class UIRenderer {
     };
 
     private handleTileTouchEnd = (game: Game) => (e: TouchEvent): void => {
-        e.preventDefault();
         if (this._longPressTimeout) {
             clearTimeout(this._longPressTimeout);
             this._longPressTimeout = null;
@@ -91,6 +95,22 @@ export class UIRenderer {
         }
         if (!this._timerRunning) this.startTimer();
         game.reveal(row, col);
+        this._touchStartPos = null;
+    };
+
+    private handleTileTouchMove = (e: TouchEvent): void => {
+        if (!this._touchStartPos) return;
+        const touch: Touch = e.touches[0];
+        const dx: number = touch.clientX - this._touchStartPos.x;
+        const dy: number = touch.clientY - this._touchStartPos.y;
+        if (Math.abs(dx) > this._touchMoveThreshold || Math.abs(dy) > this._touchMoveThreshold) {
+            if (this._longPressTimeout) {
+                clearTimeout(this._longPressTimeout);
+                this._longPressTimeout = null;
+            }
+            this._pressedTile = null;
+            document.querySelectorAll(".tile.pressed").forEach(el => el.classList.remove("pressed"));
+        }
     };
 
     private handleTileTouchContextMenu = (e: MouseEvent): void => {
